@@ -5,9 +5,11 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.regex.Matcher;
@@ -19,16 +21,40 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import jp.d77.java.tools.BasicIO.Debugger;
 
 public class ToolRDAP {
-    private static class RDAPdata{
-        public HashMap<String,String> params = new HashMap<String,String>();
-        public JsonNode node;
+    public static class RDAPdata{
+        private HashMap<String,String> params = new HashMap<String,String>();
+        private JsonNode node;
+
         public RDAPdata( String s, JsonNode n ){
             this.params.put("rdap_server", s);
             this.node = n;
         }
+        
         public void set( String key, String value ){
             Debugger.InfoPrint( "set " + key + " = " + value );
             this.params.put( key, value );
+        }
+
+        public Optional<String> get( String key ){
+            if ( ! this.params.containsKey(key) ) Optional.empty();
+            return Optional.ofNullable( this.params.get(key) );
+        }
+
+        public String[] getCiders(){
+            int i = 0;
+            List<String> list = new ArrayList<>();
+            while (true) {
+                if ( this.get( "cidr_" + i ).isEmpty() ) break;
+                list.add( this.get( "cidr_" + i ).get() );
+                i++;
+            }
+            return list.toArray( new String[0] );
+        }
+
+        public Optional<String> getRdapServerFQDN(){
+            if ( this.get( "rdap_server" ).isEmpty() ) return Optional.empty();
+            URI uri = URI.create( this.get( "rdap_server" ).get() );
+            return Optional.ofNullable( uri.getHost() );
         }
     }
 
@@ -100,6 +126,12 @@ public class ToolRDAP {
         if ( data == null ) return Optional.empty();
         if ( ! data.params.containsKey( key ) ) return Optional.empty();
         return Optional.ofNullable( data.params.get(key) );
+    }
+
+    public static String[] getCidrs( String ipAddress ){
+        RDAPdata data = ToolRDAP.getRDAPdata(ipAddress).orElse( null );
+        if ( data == null ) return new String[0];
+        return data.getCiders();
     }
 
     /**

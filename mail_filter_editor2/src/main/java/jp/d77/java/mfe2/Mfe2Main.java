@@ -9,8 +9,10 @@ import org.springframework.web.util.WebUtils;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jp.d77.java.mfe2.BasicIO.Mfe2Config;
+import jp.d77.java.mfe2.Pages.CliUpdate;
 import jp.d77.java.mfe2.Pages.WebLogs;
 import jp.d77.java.mfe2.Pages.WebRdap;
+import jp.d77.java.mfe2.Pages.WebSubnets;
 import jp.d77.java.mfe2.Pages.WebTop;
 import jp.d77.java.tools.BasicIO.BasicConfig;
 import jp.d77.java.tools.BasicIO.Debugger;
@@ -51,6 +53,35 @@ public class Mfe2Main {
 
         // 表示用クラスの設定
         AbstractWebPage web = new WebLogs( "/logs", new Mfe2Config() );
+        this.setForm( request, web.getConfig() );
+
+        return this.procWeb( web );
+    }
+
+    @RequestMapping("/subnets")  // ルートへこのメソッドをマップする
+    @SuppressWarnings("null")
+    public String Subnets( HttpServletRequest request ) {
+        Debugger.init();
+        Debugger.InfoPrint( "------ START ------" );
+
+        // 表示用クラスの設定
+        AbstractWebPage web = new WebSubnets( "/subnets", new Mfe2Config() );
+        web.getConfig().addMethod("ip", WebUtils.findParameterValue(request, "ip") );
+        this.setForm( request, web.getConfig() );
+
+        return this.procWeb( web );
+    }
+
+    @RequestMapping("/cli_update")  // ルートへこのメソッドをマップする
+    @SuppressWarnings("null")
+    public String CliUpdate( HttpServletRequest request ) {
+        Debugger.init();
+        Debugger.InfoPrint( "------ START ------" );
+
+        // 表示用クラスの設定
+        AbstractWebPage web = new CliUpdate( "/cli_update", new Mfe2Config() );
+        web.getConfig().addMethod("mode", WebUtils.findParameterValue(request, "mode") );
+        //web.getConfig().addMethod("ip", WebUtils.findParameterValue(request, "ip") );
         this.setForm( request, web.getConfig() );
 
         return this.procWeb( web );

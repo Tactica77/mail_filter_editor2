@@ -38,14 +38,19 @@ public class Mfe2Config extends BasicConfig {
     public String getDataFilePath(){
         if ( Mfe2Application.getFilePath().isEmpty() ){
             return FileSystems.getDefault().getPath("").toAbsolutePath().toString() + "/../mfe_data/";
+        }else{
+            return Mfe2Application.getFilePath().get();
         }
-        return Mfe2Application.getFilePath().get();
+
+        
     }
 
     public String getLogFilePath(){
         if ( Mfe2Application.getFilePath().isEmpty() ){
             return FileSystems.getDefault().getPath("").toAbsolutePath().toString() + "/../logs/";
+        }else{
+            return Mfe2Application.getFilePath().get() + "/../logs/";
         }
-        return Mfe2Application.getFilePath().get();
+        //return Mfe2Application.getFilePath().get();
     }
 }

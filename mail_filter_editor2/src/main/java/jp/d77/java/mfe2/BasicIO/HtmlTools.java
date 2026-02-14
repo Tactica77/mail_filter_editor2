@@ -11,7 +11,7 @@ public class HtmlTools {
         if ( lines == null ) return Optional.empty();
         ArrayList<String> strings = new ArrayList<String>();
         for ( String l: lines ){
-            strings.add( HtmlTools.IPLink( l ) );
+            strings.add( HtmlString.HtmlEscape(l) + HtmlTools.IPLink( l ) );
         }
         return HtmlTools.joinDispPlain( strings.toArray( new String[0] ) );
     }
@@ -69,6 +69,6 @@ public class HtmlTools {
     }
 
     public static String IPLink( String ip ){
-        return HtmlString.HtmlEscape(ip) + "<A href=\"/rdap?edit_ip=" + HtmlString.HtmlEscape(ip) + "\" target=\"_blank\">(R)</A>";
+        return "<A href=\"/rdap?edit_ip=" + HtmlString.HtmlEscape(ip) + "\" target=\"_blank\">(R)</A>";
     }
 }

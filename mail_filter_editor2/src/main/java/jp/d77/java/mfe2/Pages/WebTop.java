@@ -54,7 +54,9 @@ public class WebTop extends AbstractMfe{
     @Override
     public void displayBody() {
         super.displayBody();
-        this.getHtml().addString( WebForms.RDAPsearch( this.getConfig() ) );
+        this.getHtml().addStringBr( WebForms.RDAPsearch( this.getConfig() ) );
+        this.getHtml().addStringBr( "Data Path=" + this.getConfig().getDataFilePath() );
+        this.getHtml().addStringBr( "Log Path=" + this.getConfig().getLogFilePath() );
     }
 
     // 9:displayBottomInfo
