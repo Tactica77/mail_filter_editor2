@@ -13,6 +13,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.regex.Matcher;
@@ -23,11 +24,11 @@ import jp.d77.java.tools.BasicIO.Debugger;
 public class SessionLogDatas {
     private class LogData{
         private int m_idx;
-        private HashMap<String,Set<String>> m_props_string;
-        private HashMap<String,Set<Integer>> m_props_int;
+        private Map<String,Set<String>> m_props_string;
+        private Map<String,Set<Integer>> m_props_int;
         private LocalDateTime m_start;
         private LocalDateTime m_end;
-        private ArrayList<LogBasicData> m_log;
+        private List<LogBasicData> m_log;
 
         public LogData(){
             SessionLogDatas.m_idx_count += 1;
@@ -145,24 +146,12 @@ public class SessionLogDatas {
 
     private static int m_idx_count = -1;
     public record LogBasicData(Integer id, LocalDateTime logTime, String program, Integer pid, String message) {}
-    private ArrayList<String>   m_tempdata;
+    private List<String>   m_tempdata;
     // m_datas<idx,LogDatas>
-    private HashMap<Integer,LogData>   m_logdatas = new HashMap<Integer,LogData>();
-    private HashMap<String, HashMap<Integer,LogData>>   m_int_idx = new HashMap<String, HashMap<Integer,LogData>>();
-    private HashMap<String, HashMap<String,LogData>>    m_string_idx = new HashMap<String, HashMap<String,LogData>>();
+    private Map<Integer,LogData>   m_logdatas = new HashMap<Integer,LogData>();
+    //private HashMap<String, HashMap<Integer,LogData>>   m_int_idx = new HashMap<String, HashMap<Integer,LogData>>();
+    //private HashMap<String, HashMap<String,LogData>>    m_string_idx = new HashMap<String, HashMap<String,LogData>>();
     //private HashMap<String,LogData>   m_ip_idx = new HashMap<Integer,LogData>();
-
-    public Optional<LogBasicData> SessionLog2LogBasic( LocalDate targetDate, String line ){
-        int id;
-        String res[] = line.split("<<->>");
-        if ( res.length != 2 ) Optional.empty();
-        try {
-            id = Integer.parseInt( res[0] );
-            return this.setLogBasic( id, targetDate, res[1]);
-        } catch ( NumberFormatException e ){
-            return Optional.empty();
-        }
-    }
 
     public Optional<LogBasicData> MailLog2LogBasic( LocalDate targetDate, String line ){
         return this.setLogBasic( -1, targetDate, line);
@@ -239,7 +228,7 @@ public class SessionLogDatas {
         if ( ! this.m_logdatas.containsKey( id ) ) return;
         this.m_logdatas.get( id ).addProp(key, value);
         this.m_logdatas.get( id ).setTime(time);
-        this.addIndex( key, value, this.m_logdatas.get( id ) );
+//        this.addIndex( key, value, this.m_logdatas.get( id ) );
     }
 
     /**
@@ -252,31 +241,80 @@ public class SessionLogDatas {
         if ( ! this.m_logdatas.containsKey( id ) ) return;
         this.m_logdatas.get( id ).addProp(key, value);
         this.m_logdatas.get( id ).setTime(time);
-        this.addIndex( key, value, this.m_logdatas.get( id ) );
+//        this.addIndex( key, value, this.m_logdatas.get( id ) );
     }
-
+/*
     private void addIndex( String key, String val, LogData ld ){
         if ( !this.m_string_idx.containsKey(key) ) this.m_string_idx.put(key, new HashMap<String,LogData>() );
+
+        if ( this.m_string_idx.get(key).containsKey( val ) ){
+            if ( ! this.m_string_idx.get(key).get( val ).equals( ld ) ){
+                Debugger.WarnPrint( "Duplicat index key=" + key + " val=" + val );
+            }
+        }
         this.m_string_idx.get(key).put( val, ld );
     }
 
     private void addIndex( String key, Integer val, LogData ld ){
         if ( !this.m_int_idx.containsKey(key) ) this.m_int_idx.put(key, new HashMap<Integer,LogData>() );
+        if ( this.m_int_idx.get(key).containsKey( val ) ){
+            if ( ! this.m_int_idx.get(key).get( val ).equals( ld ) ){
+                Debugger.WarnPrint( "Duplicat index key=" + key + " val=" + val );
+            }
+        }
         this.m_int_idx.get(key).put( val, ld );
     }
-
-    public Optional<Integer> searchIndex( String key, String value ){
-        if ( ! this.m_string_idx.containsKey(key) ) return Optional.empty();
-        if ( ! this.m_string_idx.get(key).containsKey(value) ) return Optional.empty();
-        return Optional.ofNullable( this.m_string_idx.get(key).get(value).getIdx() );
+*/
+    public Optional<Integer> searchProp( String key, String value ){
+        for ( int id: this.getIdLists() ){
+            for ( String prop_key: this.getPropKeyS( id ) ){
+                for ( String prop_val: this.getPropS( id, prop_key ) ){
+                    if ( prop_val.equals( value ) ) return Optional.ofNullable( id );
+                }
+            }
+        }
+        return Optional.empty();
     }
 
-    public Optional<Integer> searchIndex( String key, Integer value ){
-        if ( ! this.m_int_idx.containsKey(key) ) return Optional.empty();
-        if ( ! this.m_int_idx.get(key).containsKey(value) ) return Optional.empty();
-        return Optional.ofNullable( this.m_int_idx.get(key).get(value).getIdx() );
+    public String[] searchProps( String key ){
+        Map<String,Boolean> ret = new HashMap<>();
+
+        for ( int id: this.getIdLists() ){
+            for ( String prop_val: this.getPropS( id, key ) ){
+                ret.put( prop_val, true );
+            }
+        }
+        return ret.keySet().toArray( new String[0] );
     }
 
+    public Integer[] searchProps( String key, String val ){
+        //Map<String,Boolean> ret = new HashMap<>();
+        List<Integer> ret = new ArrayList<>();
+
+        for ( int id: this.getIdLists() ){
+            for ( String prop_val: this.getPropS( id, key ) ){
+                if ( prop_val.equals( val ) )
+                ret.add( id );
+            }
+        }
+        return ret.toArray( new Integer[0] );
+    }
+
+    /*
+    public Optional<Integer[]> searchProps( String key, String value ){
+        List<Integer> ret = new ArrayList<Integer>();
+        for ( int id: this.getIdLists() ){
+            for ( String prop_key: this.getPropKeyS( id ) ){
+                for ( String prop_val: this.getPropS( id, prop_key ) ){
+                    if ( prop_val.equals( value ) ) {
+                        ret.add( id );
+                    }
+                }
+            }
+        }
+        return Optional.ofNullable( ret.toArray( new Integer[0] ) );
+    }
+    */
     public boolean containsId( Integer id ){
         if ( this.getLogData(id).isEmpty() ) return false;
         return true;
@@ -286,16 +324,17 @@ public class SessionLogDatas {
      * インデックスのキー一覧を取得(String)
      * @return
      */
+/*
     public String[] getIndexSList( String key ){
         if ( ! this.m_string_idx.containsKey(key) ) return new String[0];
         return this.m_string_idx.get(key).keySet().toArray( new String[0] );
     }
-
+*/
     /**
      * インデックスのキー一覧を取得(Integer)
      * @return
      */
-    public Integer[] getIndexIList(){
+    public Integer[] getIdLists(){
         return this.m_logdatas.keySet().stream()
             .sorted()
             .toArray(Integer[]::new);
@@ -350,7 +389,7 @@ public class SessionLogDatas {
      * 一時データをすべて取得
      * @return
      */
-    public ArrayList<String> getTempData(){ return this.m_tempdata; }
+    public List<String> getTempData(){ return this.m_tempdata; }
 
     /**
      * ログの最初の日時を取得

@@ -14,8 +14,8 @@ import jp.d77.java.tools.HtmlIO.BSSForm;
 import jp.d77.java.tools.HtmlIO.HtmlString;
 
 public class WebSubnets extends AbstractMfe{
-public WebSubnets(String uri, Mfe2Config cfg) {
-        super( uri, cfg );
+public WebSubnets( Mfe2Config cfg ) {
+        super( cfg );
         this.setHtmlTitle( "MFE2-Subnets" );
     }
 
@@ -69,13 +69,13 @@ public WebSubnets(String uri, Mfe2Config cfg) {
     public void displayBody() {
         super.displayBody();
 
-        if ( this.getConfig().getMethod("ip").isEmpty() ) {
+        if ( this.getConfig().get("ip").isEmpty() ) {
             this.getHtml().addStringCr( HtmlString.h( 1, "ip=null") );
             return;
         }else{
-            this.getHtml().addStringCr( HtmlString.h( 1, "ip=" + this.getConfig().getMethod("ip").get() ) );
+            this.getHtml().addStringCr( HtmlString.h( 1, "ip=" + this.getConfig().get("ip").get() ) );
         }
-        String a[] = this.getConfig().getMethod("ip").get().split( "/");
+        String a[] = this.getConfig().get("ip").get().split( "/");
         String ip = a[0];
 
         HashMap<Integer,RDAPresults> rdap_results = new HashMap<Integer,RDAPresults>();

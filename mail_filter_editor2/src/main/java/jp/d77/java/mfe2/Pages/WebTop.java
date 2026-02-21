@@ -3,8 +3,8 @@ package jp.d77.java.mfe2.Pages;
 import jp.d77.java.mfe2.BasicIO.Mfe2Config;
 
 public class WebTop extends AbstractMfe{
-    public WebTop(String uri, Mfe2Config cfg) {
-        super( uri, cfg );
+    public WebTop( Mfe2Config cfg ) {
+        super( cfg );
         this.setHtmlTitle( "MFE2" );
     }
 

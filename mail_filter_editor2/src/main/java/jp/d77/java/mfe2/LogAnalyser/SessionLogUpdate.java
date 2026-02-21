@@ -69,14 +69,14 @@ public class SessionLogUpdate {
             pid = lb.pid() + "-" + this.m_smtpd_pid_connection.get( lb.pid() );
         }
 
-        if ( this.m_ld.searchIndex( "postfix/smtpd_pid", pid).isEmpty() ) {
+        if ( this.m_ld.searchProp( "postfix/smtpd_pid", pid).isEmpty() ) {
             // postfix/smtpdのpidはまだ未発見→新規登録
             id = this.m_ld.newLogData();
             this.m_ld.addProp( lb.logTime(), id, "postfix/smtpd_pid", pid );
             this.m_ld.addProp( lb.logTime(), id, "line", line_id );
         } else{
             // postfix/smtpdのpid登録済み
-            id = this.m_ld.searchIndex( "postfix/smtpd_pid", pid).get();
+            id = this.m_ld.searchProp( "postfix/smtpd_pid", pid).get();
             this.m_ld.addProp( lb.logTime(), id, "line", line_id );
         }
 
@@ -112,8 +112,8 @@ public class SessionLogUpdate {
         s = LogPatterns.matcher( LogPatterns.PTN_QUEUEID, lb.message(), 1 );
         if ( s.isPresent() ) {
             queue = s.get();
-            if ( this.m_ld.searchIndex("postfix_queue", queue).isEmpty() ) return -999;
-            id = this.m_ld.searchIndex("postfix_queue", queue).get();
+            if ( this.m_ld.searchProp("postfix_queue", queue).isEmpty() ) return -999;
+            id = this.m_ld.searchProp("postfix_queue", queue).get();
             this.m_ld.addProp( lb.logTime(), id, "line", line_id );
         }else{
             // queue id なし
@@ -154,8 +154,8 @@ public class SessionLogUpdate {
         s = LogPatterns.matcher( LogPatterns.PTN_MESSAGEID, lb.message(), 1 );
         if ( s.isPresent() ) {
             msgid = s.get();
-            if ( this.m_ld.searchIndex("msgid", msgid).isPresent() ) {
-                id = this.m_ld.searchIndex("msgid", msgid).get();
+            if ( this.m_ld.searchProp("msgid", msgid).isPresent() ) {
+                id = this.m_ld.searchProp("msgid", msgid).get();
                 this.m_ld.addProp( lb.logTime(), id, "line", line_id );
             }
         }
@@ -164,8 +164,8 @@ public class SessionLogUpdate {
         s = LogPatterns.matcher( LogPatterns.PTN_MSGID, lb.message(), 1 );
         if ( s.isPresent() ) {
             msgid = s.get();
-            if ( this.m_ld.searchIndex("msgid", msgid).isPresent() ) {
-                id = this.m_ld.searchIndex("msgid", msgid).get();
+            if ( this.m_ld.searchProp("msgid", msgid).isPresent() ) {
+                id = this.m_ld.searchProp("msgid", msgid).get();
                 this.m_ld.addProp( lb.logTime(), id, "line", line_id );
             }
         }

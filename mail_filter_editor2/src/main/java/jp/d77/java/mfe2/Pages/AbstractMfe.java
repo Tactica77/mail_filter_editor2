@@ -11,8 +11,8 @@ import jp.d77.java.tools.HtmlIO.InterfaceWebPage;
 
 public abstract class AbstractMfe extends AbstractWebPage implements InterfaceWebPage {
     // コンストラクタ
-    public AbstractMfe( String uri, Mfe2Config cfg ){
-        super(uri, cfg);
+    public AbstractMfe( Mfe2Config cfg ){
+        super(cfg);
         Debugger.TracePrint();
     }
     // 1:init

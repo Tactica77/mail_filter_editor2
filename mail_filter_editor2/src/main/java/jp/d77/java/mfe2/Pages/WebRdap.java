@@ -9,8 +9,8 @@ import jp.d77.java.tools.HtmlIO.BSOpts;
 import jp.d77.java.tools.HtmlIO.BSSForm;
 
 public class WebRdap extends AbstractMfe{
-    public WebRdap(String uri, Mfe2Config cfg) {
-        super( uri, cfg );
+    public WebRdap( Mfe2Config cfg) {
+        super( cfg );
         this.setHtmlTitle( "MFE2 - RDAP" );
     }
 
@@ -67,7 +67,7 @@ public class WebRdap extends AbstractMfe{
         this.getHtml().addString( WebForms.RDAPsearch( this.getConfig() ) );
 
         // 検索結果
-        if ( this.getConfig().getMethod( "edit_ip" ).isPresent() ){
+        if ( this.getConfig().get( "edit_ip" ).isPresent() ){
             BSSForm f;
             // 基本パラメータ
             f = BSSForm.newForm();
@@ -78,7 +78,7 @@ public class WebRdap extends AbstractMfe{
                 .border("1")
             );
 
-            String ip = this.getConfig().getMethod( "edit_ip" ).get();
+            String ip = this.getConfig().get( "edit_ip" ).get();
 
             
             // Table Header

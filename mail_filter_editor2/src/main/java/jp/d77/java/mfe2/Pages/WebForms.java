@@ -11,11 +11,11 @@ public class WebForms {
             .formTop( "/rdap", false )
                 .formInputHidden(
                     BSOpts.init("name", "mode" )
-                    .value( cfg.getMethod("mode").orElse("-") )
+                    .value( cfg.get("mode").orElse("-") )
                 )
                 .formInput(
                     BSOpts.init("name", "edit_ip" )
-                    .value( cfg.getMethod("edit_ip").orElse(null) )
+                    .value( cfg.get("edit_ip").orElse(null) )
                 )
                 .formSubmit(
                     BSOpts.init("name", "submit_rdap_ip" )

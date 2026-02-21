@@ -5,11 +5,18 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
+import java.util.Optional;
 
 import jp.d77.java.mfe2.BasicIO.HtmlTools;
 import jp.d77.java.mfe2.BasicIO.Mfe2Config;
-import jp.d77.java.mfe2.LogAnalyser.SessionLogs;
+import jp.d77.java.mfe2.BasicIO.ToolParams;
+import jp.d77.java.mfe2.BasicIO.ToolParams.ArrayCounter;
+import jp.d77.java.mfe2.BasicIO.ToolParams.StringArray;
+import jp.d77.java.mfe2.LogAnalyser.SessionLogAnalyse;
 import jp.d77.java.mfe2.LogAnalyser.MailLog;
+import jp.d77.java.mfe2.LogAnalyser.RDAPCache;
+import jp.d77.java.mfe2.LogAnalyser.RDAPCache.RdapResult;
 import jp.d77.java.mfe2.LogAnalyser.SessionLogDatas;
 import jp.d77.java.mfe2.LogAnalyser.SessionLogDatas.LogBasicData;
 import jp.d77.java.mfe2.LogAnalyser.SessionLogUpdate;
@@ -19,12 +26,10 @@ import jp.d77.java.tools.HtmlIO.BSSForm;
 
 public class WebLogs extends AbstractMfe{
     private LocalDate targetDate = null;
-    //private SessionLogs m_SessionLogs = null;
     public SessionLogDatas  m_slog;
-    public SessionLogs  m_sLogDetail;
 
-    public WebLogs(String uri, Mfe2Config cfg) {
-        super( uri, cfg );
+    public WebLogs( Mfe2Config cfg ) {
+        super( cfg );
         this.setHtmlTitle( "MFE2" );
     }
 
@@ -34,9 +39,9 @@ public class WebLogs extends AbstractMfe{
         super.init();
 
         // 対象日の読み込み
-        if ( this.getConfig().getMethod( "edit_cal" ).isPresent() ) {
+        if ( this.getConfig().get( "edit_cal" ).isPresent() ) {
             // targetDateの読み込み
-            this.targetDate = ToolDate.YMD2LocalDate( this.getConfig().getMethod( "edit_cal" ).get() ).orElse( null );
+            this.targetDate = ToolDate.YMD2LocalDate( this.getConfig().get( "edit_cal" ).get() ).orElse( null );
         }
     }
 
@@ -52,7 +57,7 @@ public class WebLogs extends AbstractMfe{
         //this.m_SessionLogs = new SessionLogs();
         boolean create_session_log = false;
 
-        if ( this.getConfig().getMethod( "submit_log_create" ).isPresent() ) {
+        if ( this.getConfig().get( "submit_log_create" ).isPresent() ) {
             // 強制的にログの再作成
             create_session_log = true;
         }
@@ -66,12 +71,15 @@ public class WebLogs extends AbstractMfe{
             // ログの再作成
             MailLog log = new MailLog( this.getConfig() );
             log.Load(this.targetDate);
+
             SessionLogUpdate slogUpdate = new SessionLogUpdate( this.m_slog );
             slogUpdate.CreateSessionLogs( log, this.targetDate );
             this.m_slog.save( this.getConfig(), this.targetDate );
-        }else{
-            this.m_sLogDetail = new SessionLogs( this.m_slog );
         }
+
+        // ログを分析
+        SessionLogAnalyse  sLogDetail = new SessionLogAnalyse( this.m_slog );
+        sLogDetail.AnalyseLog(targetDate);
     }
 
     // 3:post_save_reload
@@ -84,8 +92,6 @@ public class WebLogs extends AbstractMfe{
     @Override
     public void proc(){
         super.proc();
-        // ログを分析
-        if ( this.m_sLogDetail != null ) this.m_sLogDetail.AnalyseLog(targetDate);
     }
     
     // 5:displayHeader
@@ -115,17 +121,19 @@ public class WebLogs extends AbstractMfe{
         super.displayBody();
 
         String targetDate = ToolDate.Fromat( LocalDate.now(), "yyyy-MM-dd" ).orElse("");
-        if ( this.getConfig().getMethod( "edit_cal" ).isPresent() ){
-            targetDate = this.getConfig().getMethod( "edit_cal" ).get();
+        if ( this.getConfig().get( "edit_cal" ).isPresent() ){
+            targetDate = this.getConfig().get( "edit_cal" ).get();
         }
 
         // 日付選択フォームの表示
         this.getHtml().addString( this.displayLogLoadForm( targetDate ) );
         if ( this.m_slog == null ) return;
 
-        if ( this.getConfig().getMethod( "submit_select_id" ).isPresent() ){
+        if ( this.getConfig().get( "submit_select_id" ).isPresent() ){
             // 詳細表示
-            this.getHtml().addString( this.displayLogDetail( this.getConfig().getMethod( "submit_select_id" ).get(), targetDate ) );
+            this.getHtml().addString( this.displayLogDetail( this.getConfig().get( "submit_select_id" ).get(), targetDate ) );
+        }else if ( this.getConfig().get( "submit_log_iplists" ).isPresent() ){
+            this.getHtml().addString( this.displayLogErrorList(  targetDate ) );
         }else{
             // -999 ログ
             this.getHtml().addString( this.displayLog999() );
@@ -145,7 +153,6 @@ public class WebLogs extends AbstractMfe{
     public void displayFooter(){
         super.displayFooter();
     }    
-
 
     /**
      * ログ詳細表示用文字列生成
@@ -254,25 +261,128 @@ public class WebLogs extends AbstractMfe{
         );
 
         f.tableHeadTop()
-            .tableRowTh( "Time(Sec)", "Num", "IP", "Codes" )
-            .tableHeadBtm();
+            .tableTh( "IP" )
+            .tableTh( "ID" )
+            .tableTh( "Time" )
+            .tableTh( "Code" )
+        .tableHeadBtm();
         f.tableBodyTop();
 
-        //for( String ip: this.m_SessionLogs )
+        for( String ip: this.m_slog.searchProps( "ip" ) ){
+            Integer[] ids = this.m_slog.searchProps( "ip", ip );
+            List<String> list_id = new ArrayList<>();
+            List<String> list_start = new ArrayList<>();
+            List<String> list_code = new ArrayList<>();
 
+            for ( Integer id: ids ){
+                list_id.add( id + "" );
+                list_start.add( ToolDate.Fromat( this.m_slog.getStart(id).orElse(null), "hh:mm" ).orElse("-") );
+                list_code.add( String.join("/", this.m_slog.getPropS( id, "relay_status" ) ) );
+            }
+
+            f.tableRowTop()
+            .tableTdHtml( ip )
+            .tableTdHtml( String.join( "<BR>", list_id ) )
+            .tableTdHtml( String.join( "<BR>", list_start ) )
+            .tableTdHtml( String.join( "<BR>", list_code ) )
+            .tableRowBtm();
+
+        }
 
         f.tableBodyBtm();
         f.tableBtm();
         return f.toString();
     }
 
+    public record logsum_list_table_data(
+        String id_link
+        , String time
+        , Integer logs
+        , List<String> IP
+        , List<String> cidr
+        , List<String> cc
+        , List<String> org
+        , String result
+        , String from_to
+    ){}
+
+
     /**
      * ログ一覧表示用文字列生成
      * @return
      */
     private String displayLogSummaryList( String targetDate ){
-        BSSForm f = BSSForm.newForm();
+        RDAPCache cache = new RDAPCache( this.getConfig() );
+        StringArray data_work = new ToolParams.StringArray();
+        ArrayCounter data_cnt = new ToolParams.ArrayCounter();
+        BSSForm f;
+        List<logsum_list_table_data> list_datas = new ArrayList<>();
 
+        LocalDate date = ToolDate.YMD2LocalDate( targetDate ).orElse( null );
+        if ( date != null ) cache.load( date );
+
+        for( int id: this.m_slog.getIdLists() ){
+            if ( id == -999 ) continue;
+            logsum_list_table_data dat;
+            data_work.clear();
+
+            data_work.add( "result", HtmlTools.joinDisp( this.m_slog.getPropS( id, "relay_status" ) ).orElse( "???" ) );
+            data_work.add( "result", HtmlTools.joinDisp( this.m_slog.getPropS( id, "error" ) ).orElse( "???" ) );
+
+            for ( String ip: this.m_slog.getPropS( id, "ip" ) ){
+                Optional<RdapResult> rdap = cache.getRDAPcidr( ip );
+                if ( rdap.isEmpty() ) continue;
+                data_work.add( "ip", ip );
+                data_cnt.add( "ip", ip );
+
+                if ( rdap.get().cidr() != null ) {
+                    data_work.add( "cidrs", rdap.get().cidr() );
+                    data_cnt.add( "cidrs", rdap.get().cidr() );
+                }
+                if ( rdap.get().cc() != null ) data_work.add( "cc", rdap.get().cc() ); 
+                if ( rdap.get().org() != null ) {
+                    data_work.add( "org", rdap.get().org() );
+                    data_cnt.add( "org", rdap.get().org() );
+                }
+
+            }
+
+            dat = new logsum_list_table_data(
+                // id_link
+                "<A href=\"" + this.getUri() + "?submit_select_id=" + id + "&edit_cal=" + targetDate + "\" target=\"_blank\">" + id + "</A>"
+
+                // time
+                , ToolDate.Fromat( this.m_slog.getStart(id).orElse(null), "HH:mm:ss" ).orElse("???")
+                    +"-<BR>"
+                    + ToolDate.Fromat( this.m_slog.getEnd(id).orElse(null), "HH:mm:ss" ).orElse("???")
+                    + "(" + this.secDiff( this.m_slog.getStart(id).orElse(null), this.m_slog.getEnd(id).orElse(null) ) + "s)"
+                
+                // logs
+                , this.m_slog.getLog(id).length
+
+                // IP
+                , data_work.toArray( "ip" )
+
+                // cidr
+                , data_work.toArray( "cidrs" )
+
+                // cc
+                , data_work.toArray( "cc" )
+
+                // org
+                , data_work.toArray( "org" )
+
+                // result
+                , String.join("<BR>", data_work.gets( "result" ) )
+
+                // from_to
+                , HtmlTools.joinDispEllipsis( this.m_slog.getPropS( id, "from" ) ).orElse("???")
+                    + "<BR>->" + HtmlTools.joinDispEllipsis( this.m_slog.getPropS( id, "to" ) ).orElse("???")
+            );
+            list_datas.add(dat);
+        }
+
+        f = BSSForm.newForm();
         f.tableTop(
             new BSOpts()
                 .id( "logs-table")
@@ -286,8 +396,13 @@ public class WebLogs extends AbstractMfe{
             .tableTh( "ID" )
             .tableTh( "Time(Sec)" )
             .tableTh( "Logs" )
+            .tableTh( "I" )
+            .tableTh( "R" )
+            .tableTh( "O" )
             .tableTh( "IP" )
-            .tableTh( "Code" )
+            .tableTh( "CIDR" )
+            .tableTh( "CC" )
+            .tableTh( "Org" )
             .tableTh( "Result" )
             .tableTh( "From/To" )
             .tableRowBtm()
@@ -295,34 +410,33 @@ public class WebLogs extends AbstractMfe{
 
         f.tableBodyTop();
 
-        for( int id: this.m_slog.getIndexIList() ){
-            if ( id == -999 ) continue;
-            //LogData ld = this.m_SessionLogs.getLogData( id ).get();
-
-            ArrayList<String> result = new ArrayList<String>();
-
-            result.add( HtmlTools.joinDisp( this.m_slog.getPropS( id, "relay_status" ) ).orElse( "???" ) );
-            result.add( HtmlTools.joinDisp( this.m_slog.getPropS( id, "error" ) ).orElse( "???" ) );
-
+        for( logsum_list_table_data dat: list_datas ){
+            String ip = "";
+            String cidrs = "";
+            String org = "";
+            if ( dat.IP.size() > 0 ) ip = dat.IP.get(0);
+            if ( dat.cidr.size() > 0 ) cidrs = dat.cidr.get(0);
+            if ( dat.org.size() > 0 ) org = dat.org.get(0);
             f.tableRowTop()
-                .tableTdHtml( "<A href=\"" + this.getUri() + "?submit_select_id=" + id + "&edit_cal=" + targetDate + "\" target=\"_blank\">" + id + "</A>" )
-                .tableTdHtml(
-                    ToolDate.Fromat( this.m_slog.getStart(id).orElse(null), "HH:mm:ss" ).orElse("???")
-                    +"-<BR>"
-                    + ToolDate.Fromat( this.m_slog.getEnd(id).orElse(null), "HH:mm:ss" ).orElse("???")
-                    + "(" + this.secDiff( this.m_slog.getStart(id).orElse(null), this.m_slog.getEnd(id).orElse(null) ) + "s)"
-                )
-                .tableTd( this.m_slog.getLog(id).length + "" )
-                .tableTdHtml( HtmlTools.joinDispIP( this.m_slog.getPropS( id, "ip" ) ).orElse("???") )
-                .tableTdHtml( HtmlTools.joinDisp( this.m_slog.getPropS( id, "relay_status" ) ).orElse("???") )
-                .tableTdHtml( String.join("<BR>", result.toArray( new String[0] ) ) )
-                .tableTdHtml( HtmlTools.joinDispEllipsis( this.m_slog.getPropS( id, "from" ) ).orElse("???")
-                    + "<BR>->" + HtmlTools.joinDispEllipsis( this.m_slog.getPropS( id, "to" ) ).orElse("???") )
+                .tableTdHtml( dat.id_link )
+                .tableTdHtml( dat.time )
+                .tableTd( dat.logs + "" )
+                .tableTd( data_cnt.get( "ip", ip ) + "" )
+                .tableTd( data_cnt.get( "cidrs", cidrs ) + "" )
+                .tableTd( data_cnt.get( "org", org ) + "" )
+                .tableTdHtml( HtmlTools.joinDispIP( dat.IP.toArray( new String[0] ) ).orElse("?") )
+                .tableTdHtml( HtmlTools.joinDispIP( dat.cidr.toArray( new String[0] ) ).orElse("?") )
+                .tableTdHtml( HtmlTools.joinDisp( dat.cc.toArray( new String[0] ) ).orElse("?") )
+                .tableTdHtml( HtmlTools.joinDisp( dat.org.toArray( new String[0] ) ).orElse("?") )
+                .tableTdHtml( dat.result )
+                .tableTdHtml( dat.from_to )
                 .tableRowBtm();
         }
 
         f.tableBodyBtm();
         f.tableBtm();
+
+        cache.save();
         return f.toString();
     }
 
@@ -419,8 +533,16 @@ public class WebLogs extends AbstractMfe{
         )
         .divBtm(2)
 
-        .divTop(4)
-        .divBtm(4)
+        .divTop(2)
+        .formSubmit(
+            BSOpts.init("name", "submit_log_iplists")
+                .label("IPLists")
+                .value("1")
+        )
+        .divBtm(2)
+
+        .divTop(2)
+        .divBtm(2)
         .divRowBtm()
 
         .formBtm();

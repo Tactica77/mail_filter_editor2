@@ -31,7 +31,7 @@ public class ToolRDAP {
         }
         
         public void set( String key, String value ){
-            Debugger.InfoPrint( "set " + key + " = " + value );
+            //Debugger.InfoPrint( "set " + key + " = " + value );
             this.params.put( key, value );
         }
 
@@ -205,4 +205,6 @@ public class ToolRDAP {
             result.put(path, node.asText());
         }
     }
+
+
 }

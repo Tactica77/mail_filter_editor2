@@ -10,17 +10,12 @@ import jp.d77.java.mfe2.LogAnalyser.LogPatterns.RelayStatus;
 import jp.d77.java.mfe2.LogAnalyser.SessionLogDatas.LogBasicData;
 import jp.d77.java.tools.BasicIO.Debugger;
 
-public class SessionLogs {
+public class SessionLogAnalyse {
     private SessionLogDatas     m_slog;
-    //private ArrayList<String>   m_savedata = new ArrayList<String>();
+    public record splResult(Integer id, String line) {}
 
-    public SessionLogs( SessionLogDatas slog ){
+    public SessionLogAnalyse( SessionLogDatas slog ){
         this.m_slog = slog;
-    }
-
-
-    public Integer[] getIndexsList(){
-        return this.m_slog.getIndexIList();
     }
 
     public void AnalyseLog( LocalDate targetDate ){
@@ -28,7 +23,10 @@ public class SessionLogs {
         //this.m_ld = new SessionLogDatas();
 
         for ( String line: this.m_slog.getTempData() ){
-            LogBasicData lb = this.m_slog.SessionLog2LogBasic(targetDate, line).orElse(null);
+            splResult spl = this.splitSessionLog(targetDate, line).orElse(null);
+            if ( spl == null ) continue;
+            LogBasicData lb = this.m_slog.setLogBasic( spl.id(), targetDate, spl.line() ).orElse(null);
+            //LogBasicData lb = this.m_slog.SessionLog2LogBasic(targetDate, line).orElse(null);
             if ( lb == null ) continue;
 
             int id = lb.id();
@@ -38,6 +36,18 @@ public class SessionLogs {
             if ( this.detailPostfixSmtpd( id, lb ) ) continue;
             if ( this.detailPostfixAny( id, lb ) ) continue;
             if ( this.detailDovecot( id, lb ) ) continue;
+        }
+    }
+
+    public Optional<splResult> splitSessionLog( LocalDate targetDate, String line ){
+        int id;
+        String res[] = line.split("<<->>");
+        if ( res.length != 2 ) Optional.empty();
+        try {
+            id = Integer.parseInt( res[0] );
+            return Optional.ofNullable( new splResult(id, res[1]) );
+        } catch ( NumberFormatException e ){
+            return Optional.empty();
         }
     }
 

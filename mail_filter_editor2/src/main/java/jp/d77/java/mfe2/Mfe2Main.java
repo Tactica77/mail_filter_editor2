@@ -14,10 +14,10 @@ import jp.d77.java.mfe2.Pages.WebLogs;
 import jp.d77.java.mfe2.Pages.WebRdap;
 import jp.d77.java.mfe2.Pages.WebSubnets;
 import jp.d77.java.mfe2.Pages.WebTop;
-import jp.d77.java.tools.BasicIO.BasicConfig;
 import jp.d77.java.tools.BasicIO.Debugger;
 import jp.d77.java.tools.BasicIO.ToolNums;
 import jp.d77.java.tools.HtmlIO.AbstractWebPage;
+import jp.d77.java.tools.HtmlIO.WebConfig;
 
 @RestController
 public class Mfe2Main {
@@ -28,7 +28,7 @@ public class Mfe2Main {
         Debugger.InfoPrint( "------ START ------" );
 
         // 表示用クラスの設定
-        AbstractWebPage web = new WebTop( "/", new Mfe2Config() );
+        AbstractWebPage web = new WebTop( new Mfe2Config( "/" ) );
         this.setForm( request, web.getConfig() );
 
         return this.procWeb( web );
@@ -40,7 +40,7 @@ public class Mfe2Main {
         Debugger.InfoPrint( "------ START ------" );
 
         // 表示用クラスの設定
-        AbstractWebPage web = new WebRdap( "/rdap", new Mfe2Config() );
+        AbstractWebPage web = new WebRdap( new Mfe2Config( "/rdap" ) );
         this.setForm( request, web.getConfig() );
 
         return this.procWeb( web );
@@ -52,7 +52,7 @@ public class Mfe2Main {
         Debugger.InfoPrint( "------ START ------" );
 
         // 表示用クラスの設定
-        AbstractWebPage web = new WebLogs( "/logs", new Mfe2Config() );
+        AbstractWebPage web = new WebLogs( new Mfe2Config( "/logs" ) );
         this.setForm( request, web.getConfig() );
 
         return this.procWeb( web );
@@ -65,8 +65,8 @@ public class Mfe2Main {
         Debugger.InfoPrint( "------ START ------" );
 
         // 表示用クラスの設定
-        AbstractWebPage web = new WebSubnets( "/subnets", new Mfe2Config() );
-        web.getConfig().addMethod("ip", WebUtils.findParameterValue(request, "ip") );
+        AbstractWebPage web = new WebSubnets( new Mfe2Config( "/subnets" ) );
+        web.getConfig().add("ip", WebUtils.findParameterValue(request, "ip") );
         this.setForm( request, web.getConfig() );
 
         return this.procWeb( web );
@@ -79,8 +79,8 @@ public class Mfe2Main {
         Debugger.InfoPrint( "------ START ------" );
 
         // 表示用クラスの設定
-        AbstractWebPage web = new CliUpdate( "/cli_update", new Mfe2Config() );
-        web.getConfig().addMethod("mode", WebUtils.findParameterValue(request, "mode") );
+        AbstractWebPage web = new CliUpdate( new Mfe2Config( "/cli_update" ) );
+        web.getConfig().overwrite("mode", WebUtils.findParameterValue(request, "mode") );
         //web.getConfig().addMethod("ip", WebUtils.findParameterValue(request, "ip") );
         this.setForm( request, web.getConfig() );
 
@@ -88,16 +88,16 @@ public class Mfe2Main {
     }
 
     @SuppressWarnings("null")
-    private void setForm( HttpServletRequest request, BasicConfig cfg ){
+    private void setForm( HttpServletRequest request, WebConfig cfg ){
         // Modeを取得
-        cfg.addMethod("mode", WebUtils.findParameterValue(request, "mode") );
+        cfg.overwrite("mode", WebUtils.findParameterValue(request, "mode") );
         Map<String, Object> params;
 
         // フォーム投稿を取得(edit_から始まる項目を取得)
         params = WebUtils.getParametersStartingWith(request, "edit_");
         if (!params.isEmpty()) {
             for (Entry<String, Object> e : params.entrySet()) {
-                cfg.addMethod("edit_" + e.getKey(), e.getValue().toString() );
+                cfg.overwrite("edit_" + e.getKey(), e.getValue().toString() );
             }
         }
 
@@ -106,7 +106,7 @@ public class Mfe2Main {
         params = WebUtils.getParametersStartingWith(request, "submit_");
         if (!params.isEmpty()) {
             for (Entry<String, Object> e : params.entrySet()) {
-                cfg.addMethod("submit_" + e.getKey(), e.getValue().toString() );
+                cfg.overwrite("submit_" + e.getKey(), e.getValue().toString() );
             }
         }
     }

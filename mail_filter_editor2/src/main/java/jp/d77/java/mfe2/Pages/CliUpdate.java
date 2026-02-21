@@ -12,8 +12,8 @@ public class CliUpdate extends AbstractMfe{
     private String m_result = "no proc";
     public SessionLogDatas  m_slog;
 
-    public CliUpdate(String uri, Mfe2Config cfg) {
-        super( uri, cfg );
+    public CliUpdate( Mfe2Config cfg ) {
+        super( cfg );
     }
 
     // 1:init
@@ -22,11 +22,11 @@ public class CliUpdate extends AbstractMfe{
         super.init();
 
         // 引数の確認と、更新日の取得
-        if ( this.getConfig().getMethod( "mode" ).isEmpty() ) return;
-        if ( this.getConfig().getMethod( "mode" ).get().equals( "sessionlog" ) ) {
+        if ( this.getConfig().get( "mode" ).isEmpty() ) return;
+        if ( this.getConfig().get( "mode" ).get().equals( "sessionlog" ) ) {
             this.targetDate = LocalDate.now();
-            if ( this.getConfig().getMethod( "edit_diffdate" ).isPresent() ) {
-                String d = this.getConfig().getMethod( "edit_diffdate" ).get();
+            if ( this.getConfig().get( "edit_diffdate" ).isPresent() ) {
+                String d = this.getConfig().get( "edit_diffdate" ).get();
                 try{
                     Long i = Long.parseLong(d);
                     this.targetDate = this.targetDate.plusDays( i * (-1L) );

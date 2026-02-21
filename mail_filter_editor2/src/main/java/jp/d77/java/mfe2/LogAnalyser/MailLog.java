@@ -69,16 +69,16 @@ public class MailLog {
         Path maillog = logDir.resolve("maillog");
 
         if (latestRotated.isPresent()) {
-            this.m_cfg.alertInfo.addStringBr( "Load log=" + latestRotated.get().getFileName() );
+            this.m_cfg.addAlertInfo( "Load log=" + latestRotated.get().getFileName() );
             Debugger.InfoPrint( "Loaded log line=" + latestRotated.get().getFileName() );
             this.processFile(latestRotated.get(), targetDate);
         }
 
         if (Files.exists(maillog)) {
-            this.m_cfg.alertInfo.addStringBr( "Load log=" + maillog.getFileName() );
+            this.m_cfg.addAlertInfo( "Load log=" + maillog.getFileName() );
             this.processFile(maillog, targetDate);
         }
-        this.m_cfg.alertInfo.addStringBr( "Loaded line=" + this.m_log.size() );
+        this.m_cfg.addAlertInfo( "Loaded line=" + this.m_log.size() );
         Debugger.InfoPrint( "Loaded line=" + this.m_log.size() );
     }
 
@@ -120,7 +120,7 @@ public class MailLog {
             br.close();
             Debugger.InfoPrint( "loaded file=" + file + " date=" + targetDate );
         } catch ( IOException e ){
-            this.m_cfg.alertError.addStringBr( "processFile Error file=" + file + " " + e.getMessage() );
+            this.m_cfg.addAlertError( "processFile Error file=" + file + " " + e.getMessage() );
             Debugger.ErrorPrint( "file=" + file + " " + e.getMessage() );
             e.printStackTrace();
         }
