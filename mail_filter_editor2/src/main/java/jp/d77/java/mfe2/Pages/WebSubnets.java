@@ -2,7 +2,7 @@ package jp.d77.java.mfe2.Pages;
 
 import java.util.HashMap;
 
-import jp.d77.java.mfe2.BasicIO.HtmlTools;
+import jp.d77.java.mfe2.BasicIO.ToolAny;
 import jp.d77.java.mfe2.BasicIO.Mfe2Config;
 import jp.d77.java.mfe2.BasicIO.ToolNet;
 import jp.d77.java.mfe2.BasicIO.ToolNet.Cidr;
@@ -142,7 +142,7 @@ public WebSubnets( Mfe2Config cfg ) {
 
             // RDAP CIDR
             //f.tableTdHtml( SharedWebLib.linkBlockEditor(cidr, cc, org) );
-            f.tableTdHtml( rdap_results.get(i).cidr + HtmlTools.IPLink( rdap_results.get(i).start_ip ) );
+            f.tableTdHtml( rdap_results.get(i).cidr + ToolAny.IPLink( rdap_results.get(i).start_ip ) );
 
             // RDAP RANGE
             f.tableTdHtml( rdap_results.get(i).start_ip + "-" + rdap_results.get(i).end_ip );

@@ -3,9 +3,10 @@ package jp.d77.java.mfe2.Pages;
 import java.time.LocalDate;
 
 import jp.d77.java.mfe2.BasicIO.Mfe2Config;
+import jp.d77.java.mfe2.Datas.SessionLogDatas;
 import jp.d77.java.mfe2.LogAnalyser.MailLog;
-import jp.d77.java.mfe2.LogAnalyser.SessionLogDatas;
-import jp.d77.java.mfe2.LogAnalyser.SessionLogUpdate;
+import jp.d77.java.mfe2.LogAnalyser.SessionLogAnalyse;
+import jp.d77.java.mfe2.LogAnalyser.SessionLogNumbering;
 
 public class CliUpdate extends AbstractMfe{
     private LocalDate targetDate = null;
@@ -23,7 +24,9 @@ public class CliUpdate extends AbstractMfe{
 
         // 引数の確認と、更新日の取得
         if ( this.getConfig().get( "mode" ).isEmpty() ) return;
+
         if ( this.getConfig().get( "mode" ).get().equals( "sessionlog" ) ) {
+            // mode=sessionlog & edit_diffdate=日の差 でtargetDateを埋める
             this.targetDate = LocalDate.now();
             if ( this.getConfig().get( "edit_diffdate" ).isPresent() ) {
                 String d = this.getConfig().get( "edit_diffdate" ).get();
@@ -43,13 +46,20 @@ public class CliUpdate extends AbstractMfe{
 
         if ( this.targetDate == null ) return;
 
-        this.m_slog = new SessionLogDatas();
-        SessionLogUpdate slogUpdate = new SessionLogUpdate( this.m_slog );
+        // ログの読み込み
         MailLog log = new MailLog( this.getConfig() );
         log.Load(this.targetDate);
 
+        // session logの更新と保存
+        this.m_slog = new SessionLogDatas();
+        SessionLogNumbering slogUpdate = new SessionLogNumbering( this.m_slog );
         slogUpdate.CreateSessionLogs( log, this.targetDate );
+
         this.m_slog.save( this.getConfig(), this.targetDate );
+        // ログを分析
+        SessionLogAnalyse  sLogDetail = new SessionLogAnalyse( this.m_slog );
+        sLogDetail.analyseLog( targetDate, this.getConfig() );
+        
         this.m_result = "update session log targetDate=" + this.targetDate;
     }
 

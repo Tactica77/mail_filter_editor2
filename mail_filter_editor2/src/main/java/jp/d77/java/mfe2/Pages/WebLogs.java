@@ -8,18 +8,18 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Optional;
 
-import jp.d77.java.mfe2.BasicIO.HtmlTools;
+import jp.d77.java.mfe2.BasicIO.ToolAny;
+import jp.d77.java.mfe2.BasicIO.ToolAny.arrayCounter;
+import jp.d77.java.mfe2.BasicIO.ToolAny.arrayString;
+import jp.d77.java.mfe2.Datas.RDAPCache;
+import jp.d77.java.mfe2.Datas.SessionLogDatas;
+import jp.d77.java.mfe2.Datas.RDAPCache.RdapResult;
+import jp.d77.java.mfe2.Datas.SessionLogDatas.LogBasicData;
 import jp.d77.java.mfe2.BasicIO.Mfe2Config;
-import jp.d77.java.mfe2.BasicIO.ToolParams;
-import jp.d77.java.mfe2.BasicIO.ToolParams.ArrayCounter;
-import jp.d77.java.mfe2.BasicIO.ToolParams.StringArray;
 import jp.d77.java.mfe2.LogAnalyser.SessionLogAnalyse;
 import jp.d77.java.mfe2.LogAnalyser.MailLog;
-import jp.d77.java.mfe2.LogAnalyser.RDAPCache;
-import jp.d77.java.mfe2.LogAnalyser.RDAPCache.RdapResult;
-import jp.d77.java.mfe2.LogAnalyser.SessionLogDatas;
-import jp.d77.java.mfe2.LogAnalyser.SessionLogDatas.LogBasicData;
-import jp.d77.java.mfe2.LogAnalyser.SessionLogUpdate;
+import jp.d77.java.mfe2.LogAnalyser.SessionLogNumbering;
+import jp.d77.java.mfe2.Pages.WebBlockEditor.BlockFormData;
 import jp.d77.java.tools.BasicIO.ToolDate;
 import jp.d77.java.tools.HtmlIO.BSOpts;
 import jp.d77.java.tools.HtmlIO.BSSForm;
@@ -72,14 +72,14 @@ public class WebLogs extends AbstractMfe{
             MailLog log = new MailLog( this.getConfig() );
             log.Load(this.targetDate);
 
-            SessionLogUpdate slogUpdate = new SessionLogUpdate( this.m_slog );
+            SessionLogNumbering slogUpdate = new SessionLogNumbering( this.m_slog );
             slogUpdate.CreateSessionLogs( log, this.targetDate );
             this.m_slog.save( this.getConfig(), this.targetDate );
         }
 
         // ログを分析
         SessionLogAnalyse  sLogDetail = new SessionLogAnalyse( this.m_slog );
-        sLogDetail.AnalyseLog(targetDate);
+        sLogDetail.analyseLog( targetDate, this.getConfig() );
     }
 
     // 3:post_save_reload
@@ -132,8 +132,6 @@ public class WebLogs extends AbstractMfe{
         if ( this.getConfig().get( "submit_select_id" ).isPresent() ){
             // 詳細表示
             this.getHtml().addString( this.displayLogDetail( this.getConfig().get( "submit_select_id" ).get(), targetDate ) );
-        }else if ( this.getConfig().get( "submit_log_iplists" ).isPresent() ){
-            this.getHtml().addString( this.displayLogErrorList(  targetDate ) );
         }else{
             // -999 ログ
             this.getHtml().addString( this.displayLog999() );
@@ -189,11 +187,11 @@ public class WebLogs extends AbstractMfe{
 
         HashMap<String,String> lines = new HashMap<String,String>();
         for ( String key: this.m_slog.getPropKeyS( id ) ){
-            lines.put( key, HtmlTools.joinDisp( this.m_slog.getPropS( id, key ) ).orElse("???") );
+            lines.put( key, ToolAny.joinDisp( this.m_slog.getPropS( id, key ) ).orElse("???") );
         }
 
         for ( String key: this.m_slog.getPropKeyI( id ) ){
-            lines.put( key, HtmlTools.joinDispI( this.m_slog.getPropI( id, key ) ).orElse("???") );
+            lines.put( key, ToolAny.joinDispI( this.m_slog.getPropI( id, key ) ).orElse("???") );
         }
 
         for ( String key: lines.keySet().stream().sorted().toArray(String[]::new) ){
@@ -250,50 +248,6 @@ public class WebLogs extends AbstractMfe{
         return Duration.between( start, end ).getSeconds();
     }
 
-    private String displayLogErrorList( String targetDate ){
-
-        BSSForm f = BSSForm.newForm();
-        f.tableTop(
-            new BSOpts()
-                .id( "logs-table")
-                .fclass("table table-bordered table-striped")
-                .border("1")
-        );
-
-        f.tableHeadTop()
-            .tableTh( "IP" )
-            .tableTh( "ID" )
-            .tableTh( "Time" )
-            .tableTh( "Code" )
-        .tableHeadBtm();
-        f.tableBodyTop();
-
-        for( String ip: this.m_slog.searchProps( "ip" ) ){
-            Integer[] ids = this.m_slog.searchProps( "ip", ip );
-            List<String> list_id = new ArrayList<>();
-            List<String> list_start = new ArrayList<>();
-            List<String> list_code = new ArrayList<>();
-
-            for ( Integer id: ids ){
-                list_id.add( id + "" );
-                list_start.add( ToolDate.Fromat( this.m_slog.getStart(id).orElse(null), "hh:mm" ).orElse("-") );
-                list_code.add( String.join("/", this.m_slog.getPropS( id, "relay_status" ) ) );
-            }
-
-            f.tableRowTop()
-            .tableTdHtml( ip )
-            .tableTdHtml( String.join( "<BR>", list_id ) )
-            .tableTdHtml( String.join( "<BR>", list_start ) )
-            .tableTdHtml( String.join( "<BR>", list_code ) )
-            .tableRowBtm();
-
-        }
-
-        f.tableBodyBtm();
-        f.tableBtm();
-        return f.toString();
-    }
-
     public record logsum_list_table_data(
         String id_link
         , String time
@@ -313,36 +267,39 @@ public class WebLogs extends AbstractMfe{
      */
     private String displayLogSummaryList( String targetDate ){
         RDAPCache cache = new RDAPCache( this.getConfig() );
-        StringArray data_work = new ToolParams.StringArray();
-        ArrayCounter data_cnt = new ToolParams.ArrayCounter();
+        arrayString data_work = new arrayString();
+        arrayCounter data_cnt_ip = new arrayCounter();
+        arrayCounter data_cnt_cidrs = new arrayCounter();
+        arrayCounter data_cnt_org = new arrayCounter();
         BSSForm f;
         List<logsum_list_table_data> list_datas = new ArrayList<>();
 
         LocalDate date = ToolDate.YMD2LocalDate( targetDate ).orElse( null );
         if ( date != null ) cache.load( date );
+        cache.rdap_get_flag( false );
 
         for( int id: this.m_slog.getIdLists() ){
             if ( id == -999 ) continue;
             logsum_list_table_data dat;
             data_work.clear();
 
-            data_work.add( "result", HtmlTools.joinDisp( this.m_slog.getPropS( id, "relay_status" ) ).orElse( "???" ) );
-            data_work.add( "result", HtmlTools.joinDisp( this.m_slog.getPropS( id, "error" ) ).orElse( "???" ) );
+            data_work.add( "result", ToolAny.joinDisp( this.m_slog.getPropS( id, "relay_status" ) ).orElse( "???" ) );
+            data_work.add( "result", ToolAny.joinDisp( this.m_slog.getPropS( id, "error" ) ).orElse( "???" ) );
 
             for ( String ip: this.m_slog.getPropS( id, "ip" ) ){
-                Optional<RdapResult> rdap = cache.getRDAPcidr( ip );
-                if ( rdap.isEmpty() ) continue;
                 data_work.add( "ip", ip );
-                data_cnt.add( "ip", ip );
+                Optional<RdapResult> rdap = cache.getRDAP( ip );
+                if ( rdap.isEmpty() ) continue;
+                data_cnt_ip.add( ip );
 
                 if ( rdap.get().cidr() != null ) {
                     data_work.add( "cidrs", rdap.get().cidr() );
-                    data_cnt.add( "cidrs", rdap.get().cidr() );
+                    data_cnt_cidrs.add( rdap.get().cidr() );
                 }
                 if ( rdap.get().cc() != null ) data_work.add( "cc", rdap.get().cc() ); 
                 if ( rdap.get().org() != null ) {
                     data_work.add( "org", rdap.get().org() );
-                    data_cnt.add( "org", rdap.get().org() );
+                    data_cnt_org.add( rdap.get().org() );
                 }
 
             }
@@ -376,8 +333,8 @@ public class WebLogs extends AbstractMfe{
                 , String.join("<BR>", data_work.gets( "result" ) )
 
                 // from_to
-                , HtmlTools.joinDispEllipsis( this.m_slog.getPropS( id, "from" ) ).orElse("???")
-                    + "<BR>->" + HtmlTools.joinDispEllipsis( this.m_slog.getPropS( id, "to" ) ).orElse("???")
+                , ToolAny.joinDispEllipsis( this.m_slog.getPropS( id, "from" ) ).orElse("???")
+                    + "<BR>->" + ToolAny.joinDispEllipsis( this.m_slog.getPropS( id, "to" ) ).orElse("???")
             );
             list_datas.add(dat);
         }
@@ -413,30 +370,64 @@ public class WebLogs extends AbstractMfe{
         for( logsum_list_table_data dat: list_datas ){
             String ip = "";
             String cidrs = "";
+            String cc = "";
             String org = "";
             if ( dat.IP.size() > 0 ) ip = dat.IP.get(0);
             if ( dat.cidr.size() > 0 ) cidrs = dat.cidr.get(0);
+            if ( dat.cc.size() > 0 ) cc = dat.cc.get(0);
             if ( dat.org.size() > 0 ) org = dat.org.get(0);
-            f.tableRowTop()
-                .tableTdHtml( dat.id_link )
-                .tableTdHtml( dat.time )
-                .tableTd( dat.logs + "" )
-                .tableTd( data_cnt.get( "ip", ip ) + "" )
-                .tableTd( data_cnt.get( "cidrs", cidrs ) + "" )
-                .tableTd( data_cnt.get( "org", org ) + "" )
-                .tableTdHtml( HtmlTools.joinDispIP( dat.IP.toArray( new String[0] ) ).orElse("?") )
-                .tableTdHtml( HtmlTools.joinDispIP( dat.cidr.toArray( new String[0] ) ).orElse("?") )
-                .tableTdHtml( HtmlTools.joinDisp( dat.cc.toArray( new String[0] ) ).orElse("?") )
-                .tableTdHtml( HtmlTools.joinDisp( dat.org.toArray( new String[0] ) ).orElse("?") )
-                .tableTdHtml( dat.result )
-                .tableTdHtml( dat.from_to )
-                .tableRowBtm();
+            f.tableRowTop();
+            // ID
+            f.tableTdHtml( dat.id_link );
+
+            // Time
+            f.tableTdHtml( dat.time );
+
+            // Logs
+            f.tableTd( dat.logs + "" );
+
+            // I
+            f.tableTd( data_cnt_ip.get( ip ) + "" );
+
+            // R
+            f.tableTd( data_cnt_cidrs.get( cidrs ) + "" );
+
+            // O
+            f.tableTd( data_cnt_org.get( org ) + "" );
+
+            // IP
+            if ( ip.equals( "" ) ){
+                f.tableTdHtml( ToolAny.joinDisp( dat.IP.toArray( new String[0] ) ).orElse("?"));
+            }else{
+                f.tableTdHtml( ToolAny.joinDisp( dat.IP.toArray( new String[0] ) ).orElse("?")
+                + ToolAny.IPLink( new BlockFormData( ToolDate.Fromat( LocalDate.now(), "uuuuMMdd").orElse( null), cc, ip, org ) ));
+            }
+            
+            // CIDR
+            if ( cidrs.equals( "" ) ){
+                f.tableTdHtml( ToolAny.joinDisp( dat.cidr.toArray( new String[0] ) ).orElse("?") );
+            }else{
+                f.tableTdHtml( ToolAny.joinDisp( dat.cidr.toArray( new String[0] ) ).orElse("?")
+                + ToolAny.IPLink( new BlockFormData( ToolDate.Fromat( LocalDate.now(), "uuuuMMdd").orElse( null), cc, cidrs, org ) ));
+            }
+
+            // CC
+            f.tableTdHtml( ToolAny.joinDisp( dat.cc.toArray( new String[0] ) ).orElse("?") );
+
+            // Org
+            f.tableTdHtml( ToolAny.joinDisp( dat.org.toArray( new String[0] ) ).orElse("?") );
+
+            // Reesult
+            f.tableTdHtml( dat.result );
+
+            // From/To
+            f.tableTdHtml( dat.from_to );
+            f.tableRowBtm();
         }
 
         f.tableBodyBtm();
         f.tableBtm();
 
-        cache.save();
         return f.toString();
     }
 
@@ -533,16 +524,8 @@ public class WebLogs extends AbstractMfe{
         )
         .divBtm(2)
 
-        .divTop(2)
-        .formSubmit(
-            BSOpts.init("name", "submit_log_iplists")
-                .label("IPLists")
-                .value("1")
-        )
-        .divBtm(2)
-
-        .divTop(2)
-        .divBtm(2)
+        .divTop(4)
+        .divBtm(4)
         .divRowBtm()
 
         .formBtm();

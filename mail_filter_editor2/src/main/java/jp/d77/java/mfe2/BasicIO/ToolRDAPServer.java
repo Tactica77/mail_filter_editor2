@@ -3,7 +3,10 @@ package jp.d77.java.mfe2.BasicIO;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
+import java.util.Map;
 import java.util.Optional;
 
 import javax.xml.parsers.DocumentBuilder;
@@ -18,6 +21,21 @@ import org.xml.sax.SAXException;
 import jp.d77.java.tools.BasicIO.Debugger;
 
 public class ToolRDAPServer {
+    public static final Map<String, String> Country2Code = new HashMap<>();
+
+    static {
+        for (String iso : Locale.getISOCountries()) {
+            Locale locale = new Locale.Builder()
+                    .setRegion(iso)
+                    .build();
+
+            Country2Code.put(
+                locale.getDisplayCountry(Locale.ENGLISH).toLowerCase(),
+                iso
+            );
+        }
+    }
+
     // RDAP Server Class
     private static class RdapServerData{
         private int prefix_top = 0;
@@ -80,10 +98,13 @@ public class ToolRDAPServer {
         if ( ToolRDAPServer.m_listRdapServers != null ) return;
         Debugger.TracePrint();
 
+        // https://www.iana.org/assignments/ipv4-address-space/ipv4-address-space.xml
         ToolRDAPServer.m_listRdapServers = new ArrayList<>();
         File xmlFile = new File( FilePath + "ipv4-address-space.xml");
         Debugger.InfoPrint( "Loading file: " + FilePath + "ipv4-address-space.xml" );
 
+        //Map<String,Boolean> sv = new HashMap<>();
+        
         DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
         factory.setNamespaceAware(true);
 
@@ -113,10 +134,12 @@ public class ToolRDAPServer {
                 NodeList serverNodes = rdap.getElementsByTagNameNS(NS, "server");
                 for (int j = 0; j < serverNodes.getLength(); j++) {
                     rdapdata.addServer( serverNodes.item(j).getTextContent().trim() );
+                    //sv.put( serverNodes.item(j).getTextContent().trim(), true );
                 }
             }
             ToolRDAPServer.m_listRdapServers.add(rdapdata);
         }
+        //Debugger.DebugPrint( String.join( "\n", sv.keySet() ) );
     }
     
     private static String getText(Element parent, String tagName) {

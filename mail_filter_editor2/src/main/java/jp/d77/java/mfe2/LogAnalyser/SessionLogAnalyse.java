@@ -4,10 +4,13 @@ import java.time.LocalDate;
 import java.util.Optional;
 import java.util.regex.Matcher;
 
+import jp.d77.java.mfe2.BasicIO.Mfe2Config;
+import jp.d77.java.mfe2.Datas.RDAPCache;
+import jp.d77.java.mfe2.Datas.SessionLogDatas;
+import jp.d77.java.mfe2.Datas.SessionLogDatas.LogBasicData;
 import jp.d77.java.mfe2.LogAnalyser.LogPatterns.HostAddress;
 import jp.d77.java.mfe2.LogAnalyser.LogPatterns.MilterReject;
 import jp.d77.java.mfe2.LogAnalyser.LogPatterns.RelayStatus;
-import jp.d77.java.mfe2.LogAnalyser.SessionLogDatas.LogBasicData;
 import jp.d77.java.tools.BasicIO.Debugger;
 
 public class SessionLogAnalyse {
@@ -18,9 +21,11 @@ public class SessionLogAnalyse {
         this.m_slog = slog;
     }
 
-    public void AnalyseLog( LocalDate targetDate ){
+    public void analyseLog( LocalDate targetDate, Mfe2Config cfg ){
         Debugger.TracePrint();
-        //this.m_ld = new SessionLogDatas();
+        RDAPCache cache = new RDAPCache( cfg );
+        cache.load( targetDate );
+        cache.rdap_get_flag( true );
 
         for ( String line: this.m_slog.getTempData() ){
             splResult spl = this.splitSessionLog(targetDate, line).orElse(null);
@@ -33,13 +38,22 @@ public class SessionLogAnalyse {
             this.m_slog.newLogData( lb.id() );
             this.m_slog.addLog(id, lb);
 
-            if ( this.detailPostfixSmtpd( id, lb ) ) continue;
-            if ( this.detailPostfixAny( id, lb ) ) continue;
-            if ( this.detailDovecot( id, lb ) ) continue;
+            if ( this.detailPostfixSmtpd( id, lb ) ) {
+                //continue;
+            }else if ( this.detailPostfixAny( id, lb ) ) {
+                //continue;
+            }else if ( this.detailDovecot( id, lb ) ) {
+                //continue;
+            }
+
+            for ( String ip: this.m_slog.getPropS( id, "ip" ) ){
+                cache.getRDAP( ip );
+            }
         }
+        cache.save();
     }
 
-    public Optional<splResult> splitSessionLog( LocalDate targetDate, String line ){
+    private Optional<splResult> splitSessionLog( LocalDate targetDate, String line ){
         int id;
         String res[] = line.split("<<->>");
         if ( res.length != 2 ) Optional.empty();

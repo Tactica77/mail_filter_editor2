@@ -1,5 +1,6 @@
 package jp.d77.java.mfe2;
 
+import java.util.Enumeration;
 import java.util.Map;
 import java.util.Map.Entry;
 
@@ -10,6 +11,7 @@ import org.springframework.web.util.WebUtils;
 import jakarta.servlet.http.HttpServletRequest;
 import jp.d77.java.mfe2.BasicIO.Mfe2Config;
 import jp.d77.java.mfe2.Pages.CliUpdate;
+import jp.d77.java.mfe2.Pages.WebBlockEditor;
 import jp.d77.java.mfe2.Pages.WebLogs;
 import jp.d77.java.mfe2.Pages.WebRdap;
 import jp.d77.java.mfe2.Pages.WebSubnets;
@@ -73,17 +75,32 @@ public class Mfe2Main {
     }
 
     @RequestMapping("/cli_update")  // ルートへこのメソッドをマップする
-    @SuppressWarnings("null")
     public String CliUpdate( HttpServletRequest request ) {
         Debugger.init();
         Debugger.InfoPrint( "------ START ------" );
 
         // 表示用クラスの設定
         AbstractWebPage web = new CliUpdate( new Mfe2Config( "/cli_update" ) );
-        web.getConfig().overwrite("mode", WebUtils.findParameterValue(request, "mode") );
-        //web.getConfig().addMethod("ip", WebUtils.findParameterValue(request, "ip") );
         this.setForm( request, web.getConfig() );
 
+        return this.procWeb( web );
+    }
+
+    @RequestMapping("/block_editor")  // ルートへこのメソッドをマップする
+    public String BlockEditor( HttpServletRequest request ) {
+        Debugger.init();
+        Debugger.InfoPrint( "------ START ------" );
+
+        // 表示用クラスの設定
+        AbstractWebPage web = new WebBlockEditor( new Mfe2Config( "/block_editor" ) );
+        this.setForm( request, web.getConfig() );
+        web.getConfig().overwrite( "edit_select_cidr", request.getParameterValues("edit_select_cidr") );
+
+        Enumeration<String> names = request.getParameterNames();
+        while (names.hasMoreElements()) {
+            String name = names.nextElement();
+            System.out.println(name + " = " + request.getParameter(name));
+        }
         return this.procWeb( web );
     }
 
@@ -97,7 +114,13 @@ public class Mfe2Main {
         params = WebUtils.getParametersStartingWith(request, "edit_");
         if (!params.isEmpty()) {
             for (Entry<String, Object> e : params.entrySet()) {
-                cfg.overwrite("edit_" + e.getKey(), e.getValue().toString() );
+                //Debugger.InfoPrint( "---------------------------->edit_" + e.getKey() );
+                if ( e.getValue() instanceof String[] ){
+                    // 配列の場合
+                    cfg.overwrite("edit_" + e.getKey(), (String[])e.getValue() );
+                }else{
+                    cfg.overwrite("edit_" + e.getKey(), e.getValue().toString() );
+                }
             }
         }
 
