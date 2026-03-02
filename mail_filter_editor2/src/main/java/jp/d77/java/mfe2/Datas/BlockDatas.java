@@ -12,18 +12,20 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import jp.d77.java.mfe2.BasicIO.ToolNet;
+import jp.d77.java.mfe2.Datas.FilterDatas.IpFilter;
 import jp.d77.java.tools.BasicIO.Debugger;
 import jp.d77.java.tools.BasicIO.ToolDate;
 
 public class BlockDatas {
-    public static class Record {
+    public static class BlockData {
         public boolean enabled;
         public String ip;
         public LocalDate date;
         public String cc;
         public String org;
+        public String parent_ip = "-";
 
-        public Record(boolean enabled, String ip, LocalDate date, String cc, String org) {
+        public BlockData(boolean enabled, String ip, LocalDate date, String cc, String org) {
             this.enabled = enabled;
             this.ip = ip;
             this.date = date;
@@ -40,20 +42,26 @@ public class BlockDatas {
         "(?:\\s+([A-Z]{2}))?" +                       // CC (optional)
         "(?:\\s+(.*))?$"                              // ORG
     );
-    private final List<Record> m_records = new ArrayList<>();
+    private final List<BlockData> m_block_datas = new ArrayList<>();
+    private FilterDatas m_filter = null;
+
+    public BlockDatas ( FilterDatas filter ){
+        this.m_filter = filter;
+    }
 
     /**
      * アイテム追加
      * @param rec
      * @return false = 被ってる
      */
-    public boolean add( Record rec ){
-        for ( Record r: this.m_records ){
+    public boolean add( BlockData rec ){
+        for ( BlockData r: this.m_block_datas ){
             if ( rec.ip.equals( r.ip ) ) {
                 return false;
             }
         }
-        this.m_records.add(rec);
+        this.m_block_datas.add(rec);
+        this.m_filter.add( rec.ip, "black_list" );
         return true;
     }
 
@@ -63,17 +71,17 @@ public class BlockDatas {
      * @return true = 削除成功、false = 無い?
      */
     public boolean remove( String cidr ){
-        for ( Record r: this.m_records ){
+        for ( BlockData r: this.m_block_datas ){
             if ( cidr.equals( r.ip ) ) {
-                this.m_records.remove( r );
+                this.m_block_datas.remove( r );
                 return true;
             }
         }
         return false;
     }
 
-    public Optional<Record> getRecord( String cidr ){
-        for ( Record r: this.m_records ){
+    public Optional<BlockData> getRecord( String cidr ){
+        for ( BlockData r: this.m_block_datas ){
             if ( cidr.equals( r.ip ) ) return Optional.ofNullable( r );
         }
         return Optional.empty();
@@ -82,10 +90,19 @@ public class BlockDatas {
     public String[] getCidrs(){
         List<String> ret = new ArrayList<>();
 
-        for ( Record r: this.m_records ){
+        for ( BlockData r: this.m_block_datas ){
             ret.add( r.ip );
         }
         return ret.toArray( new String[0] );
+    }
+
+    private void setParentIp(){
+        for( BlockData bd: this.m_block_datas ){
+            IpFilter ipf = this.m_filter.getFilter( bd.ip ).orElse(null);
+            if ( ipf == null ) continue;
+            if ( bd.ip.equals( ipf.m_cidr ) ) continue;
+            bd.parent_ip = ipf.m_cidr + "\n" + ipf.m_type;
+        }
     }
 
     /**
@@ -95,7 +112,7 @@ public class BlockDatas {
      */
     public boolean load(String filename) {
         Debugger.TracePrint();
-        m_records.clear();
+        this.m_block_datas.clear();
         int lc = 0;
         int vc = 0;
 
@@ -132,9 +149,10 @@ public class BlockDatas {
             if (org == null) org = "";
 
             vc += 1;
-            m_records.add(new Record(enabled, ip, date, cc, org));
+            this.add(new BlockData(enabled, ip, date, cc, org));
         }
 
+        this.setParentIp();
         Debugger.InfoPrint( "Loaded file=" + filename + "  data line=" + lc + " valid lie=" + vc );
         return true;
     }
@@ -142,7 +160,7 @@ public class BlockDatas {
     public Optional<String> save(String filename) {
         List<String> output = new ArrayList<>();
 
-        for (Record r : m_records) {
+        for (BlockData r : this.m_block_datas) {
             if (!ToolNet.isIP(r.ip)) continue;
 
             StringBuilder sb = new StringBuilder();

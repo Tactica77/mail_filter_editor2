@@ -1,37 +1,58 @@
 package jp.d77.java.mfe2.LogAnalyser;
 
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Optional;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
+import jp.d77.java.mfe2.BasicIO.Mfe2Config;
 import jp.d77.java.mfe2.Datas.SessionLogDatas;
 import jp.d77.java.mfe2.Datas.SessionLogDatas.LogBasicData;
 import jp.d77.java.tools.BasicIO.Debugger;
 import jp.d77.java.tools.BasicIO.ToolDate;
 
 public class SessionLogNumbering {
+    private Mfe2Config          m_cfg;
     private SessionLogDatas     m_ld;
     private HashMap<Integer,Integer> m_smtpd_pid_connection = new HashMap<Integer,Integer>();
+    private ArrayList<String> m_log;
 
-    public SessionLogNumbering ( SessionLogDatas ld ){
+    public SessionLogNumbering ( Mfe2Config cfg, SessionLogDatas ld ){
+        this.m_cfg = cfg;
         this.m_ld = ld;
+        this.m_log = new ArrayList<String>();
     }
 
     /**
-     * ログ分析メイン
+     * MailLogからSessionLogを作成する
      * @param log
      * @param targetDate
      */
-    public void CreateSessionLogs( MailLog log, LocalDate targetDate ){
+    public void CreateSessionLogs( LocalDate targetDate ){
         Debugger.TracePrint();
+
+        //MailLog log = new MailLog( this.m_cfg );
+        //log.Load( targetDate );
+        this.Load( targetDate );
 
         String YMD = ToolDate.Fromat(targetDate, "yyyyMMdd").orElse("-");
 
-        for ( int i = 0; i < log.size(); i ++ ){
-            if ( log.getLog(i).isEmpty() ) continue;
-            String line = log.getLog(i).get();
+        for ( int i = 0; i < this.m_log.size(); i ++ ){
+            //if ( this.m_log.get(i).isEmpty() ) continue;
+            String line = this.m_log.get(i);
             
-            LogBasicData lb = this.m_ld.MailLog2LogBasic( targetDate, line ).orElse(null);
+            //LogBasicData lb = this.m_ld.MailLog2LogBasic( targetDate, line ).orElse(null);
+            LogBasicData lb = this.m_ld.setLogBasic( -1, targetDate, line ).orElse(null);
             if ( lb == null ) continue;
 
             int id = -1;
@@ -42,14 +63,20 @@ public class SessionLogNumbering {
             String tYMD;
             if ( id >= 0 ){
                 tYMD = ToolDate.Fromat( this.m_ld.getStart(id).orElse(null) , "yyyyMMdd").orElse("-");
-                if ( YMD.equals( tYMD ) ) this.m_ld.getTempData().add( id + "<<->>" + log.getLog(i).get() );
+                if ( YMD.equals( tYMD ) ) this.m_ld.getTempData().add( id + "<<->>" + this.m_log.get(i) );
             }else{
                 tYMD = ToolDate.Fromat( lb.logTime() , "yyyyMMdd").orElse("-");
-                if ( YMD.equals( tYMD ) ) this.m_ld.getTempData().add( "-999<<->>" + log.getLog(i).get() );
+                if ( YMD.equals( tYMD ) ) this.m_ld.getTempData().add( "-999<<->>" + this.m_log.get(i) );
             }
         }
     }
 
+    /**
+     * postfix/smtpdとpostfix/submission/smtpを分析
+     * @param line_id
+     * @param lb
+     * @return
+     */
     private int analyzePostfixSmtpd( int line_id, LogBasicData lb ){
         if ( ! lb.program().toLowerCase().equals( "postfix/smtpd" )
             && !lb.program().toLowerCase().equals( "postfix/submission/smtpd" )
@@ -96,6 +123,12 @@ public class SessionLogNumbering {
         return id;
     }
 
+    /**
+     * postfixその他ログを解析
+     * @param line_id
+     * @param lb
+     * @return
+     */
     private int analyzePostfixAny( int line_id, LogBasicData lb ){
         if ( ! lb.program().toLowerCase().equals( "postfix/cleanup" )
             &&  ! lb.program().toLowerCase().equals( "postfix/qmgr" )
@@ -131,6 +164,12 @@ public class SessionLogNumbering {
         return id;
     }
 
+    /**
+     * dovecotログを解析
+     * @param line_id
+     * @param lb
+     * @return
+     */
     private int analyzeDovecot( int line_id, LogBasicData lb ){
         if ( ! lb.program().toLowerCase().equals( "dovecot" ) ) return -1;
 
@@ -180,4 +219,108 @@ public class SessionLogNumbering {
 
         return id;
     }
+
+
+    /**
+     * ログ読み込み
+     * @param cfg
+     * @param targetDate
+     */
+    public void Load( LocalDate targetDate ){
+        Debugger.TracePrint();
+
+        this.m_log = new ArrayList<String>();
+        Path logDir = Paths.get( this.m_cfg.getLogFilePath() + "dms26-mail2/");
+
+        Optional<Path> latestRotated = this.findLatestRotated(logDir);
+        Path maillog = logDir.resolve("maillog");
+
+        if (latestRotated.isPresent()) {
+            this.m_cfg.addAlertInfo( "Load log=" + latestRotated.get().getFileName() );
+            Debugger.InfoPrint( "Loaded log line=" + latestRotated.get().getFileName() );
+            this.processFile(latestRotated.get(), targetDate);
+        }
+
+        if (Files.exists(maillog)) {
+            this.m_cfg.addAlertInfo( "Load log=" + maillog.getFileName() );
+            this.processFile(maillog, targetDate);
+        }
+        this.m_cfg.addAlertInfo( "Loaded line=" + this.m_log.size() );
+        Debugger.InfoPrint( "Loaded line=" + this.m_log.size() );
+    }
+
+    /**
+     * ログ読み込み
+     * @param file
+     * @param targetDate
+     */
+    private void processFile(Path file, LocalDate targetDate) {
+
+        try  {
+            BufferedReader br = Files.newBufferedReader(file);
+            String line;
+            while ((line = br.readLine()) != null) {
+                if (line.length() < 15) continue;
+
+                // 例: "Feb  1 09:06:01"
+                //String tsPart = targetDate.getYear() + " " + line.substring(0, 15).trim();
+                String tsPart = (targetDate.getYear() + " " + line.substring(0, 15))
+                    .replaceAll("\\s+", " ")
+                    .trim();
+
+                try {
+                    LocalDateTime logTime =
+                            LocalDateTime.parse(tsPart, LogPatterns.FMT_LOG_DATETIME);
+
+                    if (logTime.toLocalDate().equals(targetDate)) {
+                        this.m_log.add( line );
+                        //System.out.println(line);
+                    }else if (logTime.toLocalDate().equals(targetDate.plusDays(1))) {
+                        this.m_log.add( line );
+                    }
+
+                } catch (Exception e) {
+                    // フォーマット不正行は無視
+                    e.printStackTrace();
+                }
+            }
+            br.close();
+            Debugger.InfoPrint( "loaded file=" + file + " date=" + targetDate );
+        } catch ( IOException e ){
+            this.m_cfg.addAlertError( "processFile Error file=" + file + " " + e.getMessage() );
+            Debugger.ErrorPrint( "file=" + file + " " + e.getMessage() );
+            e.printStackTrace();
+        }
+    }
+
+    /**
+     * ログファイル検索
+     * @param dir
+     * @return
+     */
+    public Optional<Path> findLatestRotated(Path dir) {
+        Pattern ROTATED_PATTERN = Pattern.compile("^maillog-(\\d{8})$");
+        DateTimeFormatter DATE_FMT = DateTimeFormatter.ofPattern("yyyyMMdd");
+
+        try  {
+            return Files.list(dir)
+                    .filter(Files::isRegularFile)
+                    .map(Path::getFileName)
+                    .map(Path::toString)
+                    .map(name -> {
+                        Matcher m = ROTATED_PATTERN.matcher(name);
+                        if (!m.matches()) return null;
+                        LocalDate date = LocalDate.parse(m.group(1), DATE_FMT);
+                        return new LogFile(name, date);
+                    })
+                    .filter(v -> v != null)
+                    .max(Comparator.comparing(LogFile::date))
+                    .map(v -> dir.resolve(v.name()));
+        } catch ( IOException e ){
+            return Optional.empty();
+
+        }
+    }
+
+    private record LogFile(String name, LocalDate date) {}    
 }

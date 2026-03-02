@@ -4,7 +4,6 @@ import java.time.LocalDate;
 
 import jp.d77.java.mfe2.BasicIO.Mfe2Config;
 import jp.d77.java.mfe2.Datas.SessionLogDatas;
-import jp.d77.java.mfe2.LogAnalyser.MailLog;
 import jp.d77.java.mfe2.LogAnalyser.SessionLogAnalyse;
 import jp.d77.java.mfe2.LogAnalyser.SessionLogNumbering;
 
@@ -46,14 +45,10 @@ public class CliUpdate extends AbstractMfe{
 
         if ( this.targetDate == null ) return;
 
-        // ログの読み込み
-        MailLog log = new MailLog( this.getConfig() );
-        log.Load(this.targetDate);
-
         // session logの更新と保存
         this.m_slog = new SessionLogDatas();
-        SessionLogNumbering slogUpdate = new SessionLogNumbering( this.m_slog );
-        slogUpdate.CreateSessionLogs( log, this.targetDate );
+        SessionLogNumbering slogUpdate = new SessionLogNumbering( this.getConfig(), this.m_slog );
+        slogUpdate.CreateSessionLogs( this.targetDate );
 
         this.m_slog.save( this.getConfig(), this.targetDate );
         // ログを分析

@@ -116,7 +116,7 @@ public class SessionLogAnalyse {
             }
             if ( lb.message().contains("does not resolve to address") ){
                 //this.m_slog.addProp( lb.logTime(), id, "relay_status", "not resolve" );
-                this.m_slog.addProp( lb.logTime(), id, "error", "not resolve" );
+                this.m_slog.addProp( lb.logTime(), id, "error", "DNS not resolve" );
             }
         }
 

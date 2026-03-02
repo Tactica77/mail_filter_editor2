@@ -163,6 +163,14 @@ public class ToolNet {
 
     /**
      * IPとCIDRから、IPレンジを返す
+     * @param cidr
+     * @return
+     */
+    public static Optional<RangeResult> cidr2range( Cidr cidr ) {
+        return ToolNet.cidr2range( cidr.ip, cidr.cidr );
+    }
+    /**
+     * IPとCIDRから、IPレンジを返す
      * @param ip
      * @param cidr
      * @return [0]=Start IP,[1]=End IP
@@ -270,5 +278,47 @@ public class ToolNet {
 
     private static long maskBits(int prefix) {
         return ~((1L << (32 - prefix)) - 1) & 0xFFFFFFFFL;
+    }
+
+    /**
+     * 2つのIPからCIDRを作成する
+     * @param startIp
+     * @param endIp
+     * @return
+     */
+    public static Optional<String> toCidr( long startIp, long endIp ) {
+        String start = ToolNet.long2ip( startIp );
+        String end = ToolNet.long2ip( endIp );
+        return ToolNet.toCidr(start, end);
+    }
+
+    /**
+     * 2つのIPからCIDRを作成する
+     * @param startIp
+     * @param endIp
+     * @return
+     */
+    public static Optional<String> toCidr(String startIp, String endIp) {
+        try {
+            long start = ToolNet.ip2Long(startIp);
+            long end = ToolNet.ip2Long(endIp);
+
+            if (end < start) return Optional.empty();
+
+            long size = end - start + 1;
+
+            // 2のべき乗判定
+            if ((size & (size - 1)) != 0) return Optional.empty();
+
+            // ネットワーク境界確認
+            if ((start & (size - 1)) != 0) return Optional.empty();
+
+            int prefix = 32 - Long.numberOfTrailingZeros(size);
+
+            return Optional.ofNullable( startIp + "/" + prefix );
+
+        } catch (Exception e) {
+            return Optional.empty();
+        }
     }
 }

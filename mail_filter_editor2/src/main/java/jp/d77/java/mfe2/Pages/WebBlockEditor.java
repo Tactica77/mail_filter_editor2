@@ -5,9 +5,9 @@ import java.util.Optional;
 
 import jp.d77.java.mfe2.BasicIO.Mfe2Config;
 import jp.d77.java.mfe2.BasicIO.ToolAny;
-import jp.d77.java.mfe2.BasicIO.ToolNet;
 import jp.d77.java.mfe2.Datas.BlockDatas;
-import jp.d77.java.mfe2.Datas.BlockDatas.Record;
+import jp.d77.java.mfe2.Datas.FilterDatas;
+import jp.d77.java.mfe2.Datas.BlockDatas.BlockData;
 import jp.d77.java.tools.BasicIO.ToolDate;
 import jp.d77.java.tools.HtmlIO.BSOpts;
 import jp.d77.java.tools.HtmlIO.BSSForm;
@@ -38,9 +38,10 @@ public class WebBlockEditor extends AbstractMfe{
     @Override
     public void load() {
         super.load();
-        this.m_bd = new BlockDatas();
+        FilterDatas fd = new FilterDatas();
+        fd.load( this.getConfig().getDataFilePath() + "/country_filter.txt" );
+        this.m_bd = new BlockDatas( fd );
         this.m_bd.load( this.getConfig().getDataFilePath() + "/block_list_black.txt" );
-        
     }
 
     // 3:post_save_reload
@@ -102,7 +103,7 @@ public class WebBlockEditor extends AbstractMfe{
             if ( ymd == null || cidr == null || ymd.isBlank() || cidr.isEmpty() ){
                 this.getConfig().addAlertError( "YYYYMMDD or CIDR is empty" );
             }else{
-                Record rec = new Record(
+                BlockData rec = new BlockData(
                     true
                     , cidr
                     , ToolDate.YMD2LocalDate( ymd ).orElse( LocalDate.now() )
@@ -199,24 +200,6 @@ public class WebBlockEditor extends AbstractMfe{
         for ( String r: this.m_bd.getCidrs() ){
             if ( this.m_bd.getRecord(r).isEmpty() ) continue;
             String ymd = ToolDate.Fromat( this.m_bd.getRecord(r).get().date, "uuuuMMdd" ).orElse("?");
-
-            // parentIPの有無確認
-            String parentIP = "-";
-            for ( String chk: this.m_bd.getCidrs() ){
-                if ( r.equals( chk ) ) continue;    // 同一CIDR
-                if ( this.m_bd.getRecord(chk).isEmpty() ) continue; // 空
-                String s = ToolNet.isWithinCIDR(
-                    this.m_bd.getRecord(r).get().ip
-                    , this.m_bd.getRecord(chk).get().ip
-                ).orElse( null );
-                if ( s == null ) continue;  // IP以外
-                if ( s.equals( this.m_bd.getRecord(chk).get().ip ) ){
-                    // 内包するIP特定
-                    parentIP = this.m_bd.getRecord(chk).get().ip;
-                    continue;
-                }
-            }
-            
             String add_opt = "";
             if ( ! this.m_bd.getRecord(r).get().enabled ){
                 // disable行
@@ -248,7 +231,8 @@ public class WebBlockEditor extends AbstractMfe{
                     , add_opt
                 );
             f.tableTd( this.m_bd.getRecord(r).get().org, add_opt );
-            f.tableTd( parentIP, add_opt );
+            f.tableTdHtml( this.m_bd.getRecord(r).get().parent_ip.replace("\n", "<BR>") , add_opt );
+            //f.tableTd( parentIP, add_opt );
             f.tableRowBtm();
         }
         f.tableBodyBtm();

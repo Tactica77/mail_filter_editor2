@@ -99,6 +99,7 @@ public class ToolAny {
         }
 
         public void add( String key, String value ){
+            if ( value == null || value.isBlank() ) return;
             if ( ! this.data_work.containsKey(key) ) this.data_work.put( key, new ArrayList<>() );
             this.data_work.get(key).add(value);
         }

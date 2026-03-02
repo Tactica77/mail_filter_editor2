@@ -24,6 +24,14 @@ import jp.d77.java.mfe2.LogAnalyser.LogPatterns;
 import jp.d77.java.tools.BasicIO.Debugger;
 
 public class SessionLogDatas {
+    // ID counter
+    private static int m_idx_count = -1;
+    // raw log
+    public record LogBasicData(Integer id, LocalDateTime logTime, String program, Integer pid, String message) {}
+
+    // 生ログ(session logの内容そのまま)一時保管用
+    private List<String>   m_tempdata;
+
     private class LogData{
         private int m_idx;
         private Map<String,Set<String>> m_props_string;
@@ -110,55 +118,27 @@ public class SessionLogDatas {
         }
 
         public LogBasicData[] getLog(){  return this.m_log.toArray( new LogBasicData [0] ); }
-        /*
 
-        
-        public String getFormatedTime(){
-            String ret = "";
-            ret += ToolDate.Fromat( this.m_start, "yyyy-MM-dd hh:mm:ss" ).orElse( "???" );
-            ret += "-";
-            ret += ToolDate.Fromat( this.m_end, "hh:mm:ss" ).orElse( "???" );
-
-            long seconds = 0;
-            if ( this.m_start != null && this.m_end != null ){
-                seconds = Duration.between( this.m_start, this.m_end ).getSeconds();
-            }
-            
-            return ret + "(" + seconds + "s)";
-        }
-
-        public String dump(){
-            String ret = this.m_idx + " Time="
-                + ToolDate.Fromat( this.m_start, "uu/MM/dd HH:mm:ss" ).orElse("-")
-                + "-"
-                + ToolDate.Fromat( this.m_end, "uu/MM/dd HH:mm:ss" ).orElse("-");
-            for ( String k: this.m_props_string.keySet() ){
-                ret += " " + k + "=" + String.join(",", this.m_props_string.get(k) );
-            }
-            for ( String k: this.m_props_int.keySet() ){
-                ret += " " + k + "=" + this.m_props_int.get(k).stream()
-                  .sorted()
-                  .map(String::valueOf)
-                  .collect(Collectors.joining(","));
-            }
-            return ret;
-        }
-        */
     }
 
-    private static int m_idx_count = -1;
-    public record LogBasicData(Integer id, LocalDateTime logTime, String program, Integer pid, String message) {}
-    private List<String>   m_tempdata;
-    // m_datas<idx,LogDatas>
+    // 加工済みSessionLog
     private Map<Integer,LogData>   m_logdatas = new HashMap<Integer,LogData>();
-    //private HashMap<String, HashMap<Integer,LogData>>   m_int_idx = new HashMap<String, HashMap<Integer,LogData>>();
-    //private HashMap<String, HashMap<String,LogData>>    m_string_idx = new HashMap<String, HashMap<String,LogData>>();
-    //private HashMap<String,LogData>   m_ip_idx = new HashMap<Integer,LogData>();
 
-    public Optional<LogBasicData> MailLog2LogBasic( LocalDate targetDate, String line ){
-        return this.setLogBasic( -1, targetDate, line);
+    /**
+     * コンストラクタ
+     */
+    public SessionLogDatas(){
+        SessionLogDatas.m_idx_count = -1;
+         this.m_tempdata = new ArrayList<String>();
     }
 
+    /**
+     * MailLog、あるいはSessionLogからLogBasicDataデータを作成する
+     * @param id
+     * @param targetDate
+     * @param line
+     * @return
+     */
     public Optional<LogBasicData> setLogBasic( int id, LocalDate targetDate, String line ){
         String sYear = targetDate.getYear() + "";
         Matcher m = LogPatterns.PTN_LOGBASIC.matcher(line);
@@ -172,6 +152,10 @@ public class SessionLogDatas {
         // 日時
         String ts = (sYear + " " + m.group(1)) .replaceAll("\\s+", " ") .trim();
         logTime = LocalDateTime.parse(ts, LogPatterns.FMT_LOG_DATETIME);
+        if ( logTime.getMonthValue() == 1 && targetDate.getMonthValue() == 12 ){
+            // targetDateが12月で、Logが1月の場合は、ログを翌年とみなす。
+            logTime = LocalDateTime.parse(ts, LogPatterns.FMT_LOG_DATETIME).plusMonths(1);
+        }
 
         // ③ プログラム名
         program = m.group(2);
@@ -185,11 +169,6 @@ public class SessionLogDatas {
         message = m.group(4);
 
         return Optional.ofNullable( new LogBasicData(id, logTime, program, pid, message) );
-    }
-
-    public SessionLogDatas(){
-        SessionLogDatas.m_idx_count = -1;
-         this.m_tempdata = new ArrayList<String>();
     }
 
     /**
@@ -302,36 +281,25 @@ public class SessionLogDatas {
         return ret.toArray( new Integer[0] );
     }
 
-    /*
-    public Optional<Integer[]> searchProps( String key, String value ){
-        List<Integer> ret = new ArrayList<Integer>();
-        for ( int id: this.getIdLists() ){
-            for ( String prop_key: this.getPropKeyS( id ) ){
-                for ( String prop_val: this.getPropS( id, prop_key ) ){
-                    if ( prop_val.equals( value ) ) {
-                        ret.add( id );
-                    }
-                }
-            }
-        }
-        return Optional.ofNullable( ret.toArray( new Integer[0] ) );
-    }
-    */
     public boolean containsId( Integer id ){
         if ( this.getLogData(id).isEmpty() ) return false;
         return true;
     }
 
     /**
-     * インデックスのキー一覧を取得(String)
+     * キーの値に指定の文字が含まれるか
+     * @param id
+     * @param key
+     * @param value
      * @return
      */
-/*
-    public String[] getIndexSList( String key ){
-        if ( ! this.m_string_idx.containsKey(key) ) return new String[0];
-        return this.m_string_idx.get(key).keySet().toArray( new String[0] );
+    public boolean containsValue( Integer id, String key, String value ){
+        for ( String s: this.getPropS( id, key) ){
+            if ( s.contains( value ) ) return true;
+        }
+        return false;
     }
-*/
+
     /**
      * インデックスのキー一覧を取得(Integer)
      * @return

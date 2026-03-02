@@ -17,7 +17,6 @@ import jp.d77.java.mfe2.Datas.RDAPCache.RdapResult;
 import jp.d77.java.mfe2.Datas.SessionLogDatas.LogBasicData;
 import jp.d77.java.mfe2.BasicIO.Mfe2Config;
 import jp.d77.java.mfe2.LogAnalyser.SessionLogAnalyse;
-import jp.d77.java.mfe2.LogAnalyser.MailLog;
 import jp.d77.java.mfe2.LogAnalyser.SessionLogNumbering;
 import jp.d77.java.mfe2.Pages.WebBlockEditor.BlockFormData;
 import jp.d77.java.tools.BasicIO.ToolDate;
@@ -69,11 +68,8 @@ public class WebLogs extends AbstractMfe{
 
         if ( create_session_log ) {
             // ログの再作成
-            MailLog log = new MailLog( this.getConfig() );
-            log.Load(this.targetDate);
-
-            SessionLogNumbering slogUpdate = new SessionLogNumbering( this.m_slog );
-            slogUpdate.CreateSessionLogs( log, this.targetDate );
+            SessionLogNumbering slogUpdate = new SessionLogNumbering( this.getConfig(), this.m_slog );
+            slogUpdate.CreateSessionLogs( this.targetDate );
             this.m_slog.save( this.getConfig(), this.targetDate );
         }
 
@@ -257,6 +253,7 @@ public class WebLogs extends AbstractMfe{
         , List<String> cc
         , List<String> org
         , String result
+        , boolean result_error
         , String from_to
     ){}
 
@@ -280,9 +277,26 @@ public class WebLogs extends AbstractMfe{
 
         for( int id: this.m_slog.getIdLists() ){
             if ( id == -999 ) continue;
-            logsum_list_table_data dat;
-            data_work.clear();
+            logsum_list_table_data display_data;
+            //String add_opt = "";
 
+            data_work.clear();
+            boolean result_error = false;
+
+            // Result check
+            if ( this.m_slog.getLog(id).length >= 2
+                && this.m_slog.getPropS( id, "error" ).length <= 0
+                && this.m_slog.getPropS( id, "relay_status" ).length <= 0
+                ){
+                data_work.add( "result", "connect only" );
+                result_error = true;
+            }else if (
+                ! this.m_slog.containsValue( id, "relay_status", "send null")
+                && ! this.m_slog.containsValue( id, "relay_status", "send local")
+                && ! this.m_slog.containsValue( id, "relay_status", "send remote")
+                ){
+                result_error = true;
+            }
             data_work.add( "result", ToolAny.joinDisp( this.m_slog.getPropS( id, "relay_status" ) ).orElse( "???" ) );
             data_work.add( "result", ToolAny.joinDisp( this.m_slog.getPropS( id, "error" ) ).orElse( "???" ) );
 
@@ -304,7 +318,7 @@ public class WebLogs extends AbstractMfe{
 
             }
 
-            dat = new logsum_list_table_data(
+            display_data = new logsum_list_table_data(
                 // id_link
                 "<A href=\"" + this.getUri() + "?submit_select_id=" + id + "&edit_cal=" + targetDate + "\" target=\"_blank\">" + id + "</A>"
 
@@ -332,11 +346,14 @@ public class WebLogs extends AbstractMfe{
                 // result
                 , String.join("<BR>", data_work.gets( "result" ) )
 
+                // result_error
+                , result_error
+
                 // from_to
                 , ToolAny.joinDispEllipsis( this.m_slog.getPropS( id, "from" ) ).orElse("???")
                     + "<BR>->" + ToolAny.joinDispEllipsis( this.m_slog.getPropS( id, "to" ) ).orElse("???")
             );
-            list_datas.add(dat);
+            list_datas.add(display_data);
         }
 
         f = BSSForm.newForm();
@@ -367,24 +384,24 @@ public class WebLogs extends AbstractMfe{
 
         f.tableBodyTop();
 
-        for( logsum_list_table_data dat: list_datas ){
+        for( logsum_list_table_data display_data: list_datas ){
             String ip = "";
             String cidrs = "";
             String cc = "";
             String org = "";
-            if ( dat.IP.size() > 0 ) ip = dat.IP.get(0);
-            if ( dat.cidr.size() > 0 ) cidrs = dat.cidr.get(0);
-            if ( dat.cc.size() > 0 ) cc = dat.cc.get(0);
-            if ( dat.org.size() > 0 ) org = dat.org.get(0);
+            if ( display_data.IP.size() > 0 ) ip = display_data.IP.get(0);
+            if ( display_data.cidr.size() > 0 ) cidrs = display_data.cidr.get(0);
+            if ( display_data.cc.size() > 0 ) cc = display_data.cc.get(0);
+            if ( display_data.org.size() > 0 ) org = display_data.org.get(0);
             f.tableRowTop();
             // ID
-            f.tableTdHtml( dat.id_link );
+            f.tableTdHtml( display_data.id_link );
 
             // Time
-            f.tableTdHtml( dat.time );
+            f.tableTdHtml( display_data.time );
 
             // Logs
-            f.tableTd( dat.logs + "" );
+            f.tableTd( display_data.logs + "" );
 
             // I
             f.tableTd( data_cnt_ip.get( ip ) + "" );
@@ -397,31 +414,35 @@ public class WebLogs extends AbstractMfe{
 
             // IP
             if ( ip.equals( "" ) ){
-                f.tableTdHtml( ToolAny.joinDisp( dat.IP.toArray( new String[0] ) ).orElse("?"));
+                f.tableTdHtml( ToolAny.joinDisp( display_data.IP.toArray( new String[0] ) ).orElse("?"));
             }else{
-                f.tableTdHtml( ToolAny.joinDisp( dat.IP.toArray( new String[0] ) ).orElse("?")
+                f.tableTdHtml( ToolAny.joinDisp( display_data.IP.toArray( new String[0] ) ).orElse("?")
                 + ToolAny.IPLink( new BlockFormData( ToolDate.Fromat( LocalDate.now(), "uuuuMMdd").orElse( null), cc, ip, org ) ));
             }
             
             // CIDR
             if ( cidrs.equals( "" ) ){
-                f.tableTdHtml( ToolAny.joinDisp( dat.cidr.toArray( new String[0] ) ).orElse("?") );
+                f.tableTdHtml( ToolAny.joinDisp( display_data.cidr.toArray( new String[0] ) ).orElse("?") );
             }else{
-                f.tableTdHtml( ToolAny.joinDisp( dat.cidr.toArray( new String[0] ) ).orElse("?")
+                f.tableTdHtml( ToolAny.joinDisp( display_data.cidr.toArray( new String[0] ) ).orElse("?")
                 + ToolAny.IPLink( new BlockFormData( ToolDate.Fromat( LocalDate.now(), "uuuuMMdd").orElse( null), cc, cidrs, org ) ));
             }
 
             // CC
-            f.tableTdHtml( ToolAny.joinDisp( dat.cc.toArray( new String[0] ) ).orElse("?") );
+            f.tableTdHtml( ToolAny.joinDisp( display_data.cc.toArray( new String[0] ) ).orElse("?") );
 
             // Org
-            f.tableTdHtml( ToolAny.joinDisp( dat.org.toArray( new String[0] ) ).orElse("?") );
+            f.tableTdHtml( ToolAny.joinDisp( display_data.org.toArray( new String[0] ) ).orElse("?") );
 
             // Reesult
-            f.tableTdHtml( dat.result );
+            if ( display_data.result_error ){
+                f.tableTdHtml( display_data.result, " style=\"color: #FF0000;\"" );
+            }else {
+                f.tableTdHtml( display_data.result );
+            }
 
             // From/To
-            f.tableTdHtml( dat.from_to );
+            f.tableTdHtml( display_data.from_to );
             f.tableRowBtm();
         }
 
