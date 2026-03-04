@@ -15,9 +15,8 @@ import jp.d77.java.mfe2.Datas.RDAPCache;
 import jp.d77.java.mfe2.Datas.SessionLogDatas;
 import jp.d77.java.mfe2.Datas.RDAPCache.RdapResult;
 import jp.d77.java.mfe2.Datas.SessionLogDatas.LogBasicData;
+import jp.d77.java.mfe2.Datas.SessionLogManager;
 import jp.d77.java.mfe2.BasicIO.Mfe2Config;
-import jp.d77.java.mfe2.LogAnalyser.SessionLogAnalyse;
-import jp.d77.java.mfe2.LogAnalyser.SessionLogNumbering;
 import jp.d77.java.mfe2.Pages.WebBlockEditor.BlockFormData;
 import jp.d77.java.tools.BasicIO.ToolDate;
 import jp.d77.java.tools.HtmlIO.BSOpts;
@@ -25,11 +24,12 @@ import jp.d77.java.tools.HtmlIO.BSSForm;
 
 public class WebLogs extends AbstractMfe{
     private LocalDate targetDate = null;
-    public SessionLogDatas  m_slog;
+    public SessionLogManager  m_slog;
 
     public WebLogs( Mfe2Config cfg ) {
         super( cfg );
         this.setHtmlTitle( "MFE2" );
+        this.m_slog = new SessionLogManager( cfg );
     }
 
     // 1:init
@@ -50,32 +50,10 @@ public class WebLogs extends AbstractMfe{
         super.load();
         if ( this.targetDate == null ) return;
 
-        this.m_slog = new SessionLogDatas();
-
-        // targetDateの指定あり→sessionログ読み込み
-        //this.m_SessionLogs = new SessionLogs();
-        boolean create_session_log = false;
-
         if ( this.getConfig().get( "submit_log_create" ).isPresent() ) {
-            // 強制的にログの再作成
-            create_session_log = true;
+            this.m_slog.create( targetDate );
         }
-
-        if ( !create_session_log && ! this.m_slog.load( this.getConfig(), this.targetDate ) ){
-            // セッションログが無い→maillogを読み込んでsessyonログを作成する
-            create_session_log = true;
-        }
-
-        if ( create_session_log ) {
-            // ログの再作成
-            SessionLogNumbering slogUpdate = new SessionLogNumbering( this.getConfig(), this.m_slog );
-            slogUpdate.CreateSessionLogs( this.targetDate );
-            this.m_slog.save( this.getConfig(), this.targetDate );
-        }
-
-        // ログを分析
-        SessionLogAnalyse  sLogDetail = new SessionLogAnalyse( this.m_slog );
-        sLogDetail.analyseLog( targetDate, this.getConfig() );
+        this.m_slog.load( targetDate );
     }
 
     // 3:post_save_reload
@@ -94,6 +72,14 @@ public class WebLogs extends AbstractMfe{
     @Override
     public void displayHeader(){
         super.displayHeader();
+        this.getHtml().addString( "<SCRIPT>\r\n"
+            + "const values = document.querySelector(\"#edit_days_value\");\r\n"
+            + "const input = document.querySelector(\"#edit_days\");\r\n"
+            + "values.textContent = input.value;\r\n"
+            + "input.addEventListener(\"input\", (event) => {\r\n"
+            + "  values.textContent = event.target.value;\r\n"
+            + "});\r\n"
+            + "</SCRIPT>\r\n" );
         this.getHtml().addString( BSSForm.getTableHeader( "detail" ) );
         this.getHtml().addString( BSSForm.getTableHeader( "logs" ) );
         this.getHtml().addString( BSSForm.getTableHeader( "logs-999" ) );
@@ -116,13 +102,14 @@ public class WebLogs extends AbstractMfe{
     public void displayBody() {
         super.displayBody();
 
-        String targetDate = ToolDate.Fromat( LocalDate.now(), "yyyy-MM-dd" ).orElse("");
+        String strDate = ToolDate.Fromat( LocalDate.now(), "yyyy-MM-dd" ).orElse("");
         if ( this.getConfig().get( "edit_cal" ).isPresent() ){
-            targetDate = this.getConfig().get( "edit_cal" ).get();
+            strDate = this.getConfig().get( "edit_cal" ).get();
         }
+        LocalDate targetDate = ToolDate.YMD2LocalDate( strDate ).orElse( null );
 
         // 日付選択フォームの表示
-        this.getHtml().addString( this.displayLogLoadForm( targetDate ) );
+        this.getHtml().addString( this.displayLogLoadForm( strDate ) );
         if ( this.m_slog == null ) return;
 
         if ( this.getConfig().get( "submit_select_id" ).isPresent() ){
@@ -130,7 +117,7 @@ public class WebLogs extends AbstractMfe{
             this.getHtml().addString( this.displayLogDetail( this.getConfig().get( "submit_select_id" ).get(), targetDate ) );
         }else{
             // -999 ログ
-            this.getHtml().addString( this.displayLog999() );
+            this.getHtml().addString( this.displayLog999( targetDate ) );
             // サマリーリスト
             this.getHtml().addString( this.displayLogSummaryList( targetDate ) );
         }
@@ -152,8 +139,10 @@ public class WebLogs extends AbstractMfe{
      * ログ詳細表示用文字列生成
      * @return
      */
-    private String displayLogDetail( String ids, String targetDate ){
+    private String displayLogDetail( String ids, LocalDate targetDate ){
         String res = "";
+        //String yyyyMMdd = ToolDate.Fromat( targetDate,"uuuuMMdd" ).orElse( "???" );
+        String displayYMD = ToolDate.Fromat( targetDate,"uuuu-MM-dd" ).orElse( "???" );
         BSSForm f;
         int id;
 
@@ -162,10 +151,14 @@ public class WebLogs extends AbstractMfe{
         } catch( NumberFormatException e ) {
             return "Error id=" + ids + "<BR>" + e.getMessage();
         }
-        if ( ! this.m_slog.containsId( id ) ) return "not found id=" + id;
+
+        SessionLogDatas sd = this.m_slog.getData( targetDate ).orElse( null );
+        if ( sd == null ) return "error";
+
+        if ( ! sd.containsId( id ) ) return "not found id=" + id;
 
         f = BSSForm.newForm();
-        f.addStringCr( "<H2>connection detail - " + targetDate + " - id:" + ids + "</H2>" );
+        f.addStringCr( "<H2>connection detail - " + displayYMD + " - id:" + ids + "</H2>" );
         f.tableTop(
             new BSOpts()
                 .id( "detail-table")
@@ -182,12 +175,12 @@ public class WebLogs extends AbstractMfe{
             .tableHeadBtm();
 
         HashMap<String,String> lines = new HashMap<String,String>();
-        for ( String key: this.m_slog.getPropKeyS( id ) ){
-            lines.put( key, ToolAny.joinDisp( this.m_slog.getPropS( id, key ) ).orElse("???") );
+        for ( String key: sd.getPropKeyS( id ) ){
+            lines.put( key, ToolAny.joinDisp( sd.getPropS( id, key ) ).orElse("???") );
         }
 
-        for ( String key: this.m_slog.getPropKeyI( id ) ){
-            lines.put( key, ToolAny.joinDispI( this.m_slog.getPropI( id, key ) ).orElse("???") );
+        for ( String key: sd.getPropKeyI( id ) ){
+            lines.put( key, ToolAny.joinDispI( sd.getPropI( id, key ) ).orElse("???") );
         }
 
         for ( String key: lines.keySet().stream().sorted().toArray(String[]::new) ){
@@ -202,7 +195,7 @@ public class WebLogs extends AbstractMfe{
 
 
         f = BSSForm.newForm();
-        f.addStringCr( "<H2>Logs - " + targetDate + " - id:" + ids + "</H2>" );
+        f.addStringCr( "<H2>Logs - " + displayYMD + " - id:" + ids + "</H2>" );
         f.tableTop(
             new BSOpts()
                 .id( "logs-table")
@@ -221,7 +214,7 @@ public class WebLogs extends AbstractMfe{
             .tableHeadBtm();
         
         LocalDateTime start = null;
-        for ( LogBasicData lb: this.m_slog.getLog( id ) ){
+        for ( LogBasicData lb: sd.getLog( id ) ){
             if ( start == null ) start = lb.logTime();
 
             f.tableRowTop()
@@ -262,7 +255,7 @@ public class WebLogs extends AbstractMfe{
      * ログ一覧表示用文字列生成
      * @return
      */
-    private String displayLogSummaryList( String targetDate ){
+    private String displayLogSummaryList( LocalDate date ){
         RDAPCache cache = new RDAPCache( this.getConfig() );
         arrayString data_work = new arrayString();
         arrayCounter data_cnt_ip = new arrayCounter();
@@ -271,11 +264,13 @@ public class WebLogs extends AbstractMfe{
         BSSForm f;
         List<logsum_list_table_data> list_datas = new ArrayList<>();
 
-        LocalDate date = ToolDate.YMD2LocalDate( targetDate ).orElse( null );
+        SessionLogDatas sd = this.m_slog.getData(date).orElse(null);
+        if ( sd == null ) return "error";
+        
         if ( date != null ) cache.load( date );
         cache.rdap_get_flag( false );
 
-        for( int id: this.m_slog.getIdLists() ){
+        for( int id: sd.getIdLists() ){
             if ( id == -999 ) continue;
             logsum_list_table_data display_data;
             //String add_opt = "";
@@ -284,23 +279,23 @@ public class WebLogs extends AbstractMfe{
             boolean result_error = false;
 
             // Result check
-            if ( this.m_slog.getLog(id).length >= 2
-                && this.m_slog.getPropS( id, "error" ).length <= 0
-                && this.m_slog.getPropS( id, "relay_status" ).length <= 0
+            if ( sd.getLog(id).length >= 2
+                && sd.getPropS( id, "error" ).length <= 0
+                && sd.getPropS( id, "relay_status" ).length <= 0
                 ){
                 data_work.add( "result", "connect only" );
                 result_error = true;
             }else if (
-                ! this.m_slog.containsValue( id, "relay_status", "send null")
-                && ! this.m_slog.containsValue( id, "relay_status", "send local")
-                && ! this.m_slog.containsValue( id, "relay_status", "send remote")
+                ! sd.containsValue( id, "relay_status", "send null")
+                && ! sd.containsValue( id, "relay_status", "send local")
+                && ! sd.containsValue( id, "relay_status", "send remote")
                 ){
                 result_error = true;
             }
-            data_work.add( "result", ToolAny.joinDisp( this.m_slog.getPropS( id, "relay_status" ) ).orElse( "???" ) );
-            data_work.add( "result", ToolAny.joinDisp( this.m_slog.getPropS( id, "error" ) ).orElse( "???" ) );
+            data_work.add( "result", ToolAny.joinDisp( sd.getPropS( id, "relay_status" ) ).orElse( "???" ) );
+            data_work.add( "result", ToolAny.joinDisp( sd.getPropS( id, "error" ) ).orElse( "???" ) );
 
-            for ( String ip: this.m_slog.getPropS( id, "ip" ) ){
+            for ( String ip: sd.getPropS( id, "ip" ) ){
                 data_work.add( "ip", ip );
                 Optional<RdapResult> rdap = cache.getRDAP( ip );
                 if ( rdap.isEmpty() ) continue;
@@ -323,13 +318,13 @@ public class WebLogs extends AbstractMfe{
                 "<A href=\"" + this.getUri() + "?submit_select_id=" + id + "&edit_cal=" + targetDate + "\" target=\"_blank\">" + id + "</A>"
 
                 // time
-                , ToolDate.Fromat( this.m_slog.getStart(id).orElse(null), "HH:mm:ss" ).orElse("???")
+                , ToolDate.Fromat( sd.getStart(id).orElse(null), "HH:mm:ss" ).orElse("???")
                     +"-<BR>"
-                    + ToolDate.Fromat( this.m_slog.getEnd(id).orElse(null), "HH:mm:ss" ).orElse("???")
-                    + "(" + this.secDiff( this.m_slog.getStart(id).orElse(null), this.m_slog.getEnd(id).orElse(null) ) + "s)"
+                    + ToolDate.Fromat( sd.getEnd(id).orElse(null), "HH:mm:ss" ).orElse("???")
+                    + "(" + this.secDiff( sd.getStart(id).orElse(null), sd.getEnd(id).orElse(null) ) + "s)"
                 
                 // logs
-                , this.m_slog.getLog(id).length
+                , sd.getLog(id).length
 
                 // IP
                 , data_work.toArray( "ip" )
@@ -350,8 +345,8 @@ public class WebLogs extends AbstractMfe{
                 , result_error
 
                 // from_to
-                , ToolAny.joinDispEllipsis( this.m_slog.getPropS( id, "from" ) ).orElse("???")
-                    + "<BR>->" + ToolAny.joinDispEllipsis( this.m_slog.getPropS( id, "to" ) ).orElse("???")
+                , ToolAny.joinDispEllipsis( sd.getPropS( id, "from" ) ).orElse("???")
+                    + "<BR>->" + ToolAny.joinDispEllipsis( sd.getPropS( id, "to" ) ).orElse("???")
             );
             list_datas.add(display_data);
         }
@@ -457,9 +452,12 @@ public class WebLogs extends AbstractMfe{
      * 表示対象がない場合は何も表示しない
      * @return
      */
-    private String displayLog999(){
+    private String displayLog999( LocalDate targetDate ){
         int i = 0;
         BSSForm f = BSSForm.newForm();
+
+        SessionLogDatas sd = this.m_slog.getData( targetDate ).orElse( null );
+        if ( sd == null ) return "";
 
         f.addStringCr( "<H2>-999 Logs</H2>" );
         f.tableTop(
@@ -479,8 +477,8 @@ public class WebLogs extends AbstractMfe{
             .tableRowBtm()
             .tableHeadBtm();
         
-        if ( ! this.m_slog.containsId( -999 ) ) return "";
-        for ( LogBasicData lb: this.m_slog.getLog( -999 ) ){
+        if ( ! sd.containsId( -999 ) ) return "";
+        for ( LogBasicData lb: sd.getLog( -999 ) ){
             if (
                 lb.message().startsWith( "imap-login: Login: user=" )
                 || lb.message().contains( ": Disconnected: Logged " )
@@ -514,14 +512,13 @@ public class WebLogs extends AbstractMfe{
 
         .divRowTop()
         .divTop(2)
-        .formLabel(
-            BSOpts.init("name", "submit_cal")
-            .label("SELECT")
-            .value("submit_cal")
-        )
+        .formLabel( BSOpts.init("name", "edit_days").label( "Days" ) )
+        .addString( "<INPUT id=\"edit_days\" type=\"range\" min=\"1\" max=\"7\" step=\"1\"/>"
+            + "<P>Value<output id=\"edit_days_value\"></output></p>" )
         .divBtm(2)
 
         .divTop(2)
+        .formLabel( BSOpts.init("name", "edit_cal").label( "Select Date" ) )
         .formInput(
             BSOpts.init("name", "edit_cal")
             .type( "date" )

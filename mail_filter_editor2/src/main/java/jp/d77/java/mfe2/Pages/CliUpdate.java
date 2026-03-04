@@ -3,17 +3,17 @@ package jp.d77.java.mfe2.Pages;
 import java.time.LocalDate;
 
 import jp.d77.java.mfe2.BasicIO.Mfe2Config;
-import jp.d77.java.mfe2.Datas.SessionLogDatas;
-import jp.d77.java.mfe2.LogAnalyser.SessionLogAnalyse;
-import jp.d77.java.mfe2.LogAnalyser.SessionLogNumbering;
+import jp.d77.java.mfe2.Datas.SessionLogManager;
 
 public class CliUpdate extends AbstractMfe{
     private LocalDate targetDate = null;
     private String m_result = "no proc";
-    public SessionLogDatas  m_slog;
+    //public SessionLogDatas  m_slog;
+    public SessionLogManager  m_slog;
 
     public CliUpdate( Mfe2Config cfg ) {
         super( cfg );
+        this.m_slog = new SessionLogManager( cfg );
     }
 
     // 1:init
@@ -45,15 +45,7 @@ public class CliUpdate extends AbstractMfe{
 
         if ( this.targetDate == null ) return;
 
-        // session logの更新と保存
-        this.m_slog = new SessionLogDatas();
-        SessionLogNumbering slogUpdate = new SessionLogNumbering( this.getConfig(), this.m_slog );
-        slogUpdate.CreateSessionLogs( this.targetDate );
-
-        this.m_slog.save( this.getConfig(), this.targetDate );
-        // ログを分析
-        SessionLogAnalyse  sLogDetail = new SessionLogAnalyse( this.m_slog );
-        sLogDetail.analyseLog( targetDate, this.getConfig() );
+        this.m_slog.create( targetDate );
         
         this.m_result = "update session log targetDate=" + this.targetDate;
     }

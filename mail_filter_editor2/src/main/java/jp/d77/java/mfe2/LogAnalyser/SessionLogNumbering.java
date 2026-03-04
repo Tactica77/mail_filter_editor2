@@ -38,21 +38,21 @@ public class SessionLogNumbering {
      * @param log
      * @param targetDate
      */
-    public void CreateSessionLogs( LocalDate targetDate ){
+    public void CreateSessionLogs(){
         Debugger.TracePrint();
 
         //MailLog log = new MailLog( this.m_cfg );
         //log.Load( targetDate );
-        this.Load( targetDate );
+        this.Load( this.m_ld.getTargetDate() );
 
-        String YMD = ToolDate.Fromat(targetDate, "yyyyMMdd").orElse("-");
+        String YMD = ToolDate.Fromat( this.m_ld.getTargetDate(), "yyyyMMdd").orElse("-");
 
         for ( int i = 0; i < this.m_log.size(); i ++ ){
             //if ( this.m_log.get(i).isEmpty() ) continue;
             String line = this.m_log.get(i);
             
             //LogBasicData lb = this.m_ld.MailLog2LogBasic( targetDate, line ).orElse(null);
-            LogBasicData lb = this.m_ld.setLogBasic( -1, targetDate, line ).orElse(null);
+            LogBasicData lb = this.m_ld.setLogBasic( -1, line ).orElse(null);
             if ( lb == null ) continue;
 
             int id = -1;

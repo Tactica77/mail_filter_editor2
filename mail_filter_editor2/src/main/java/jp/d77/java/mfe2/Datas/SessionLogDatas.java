@@ -123,13 +123,15 @@ public class SessionLogDatas {
 
     // 加工済みSessionLog
     private Map<Integer,LogData>   m_logdatas = new HashMap<Integer,LogData>();
+    private LocalDate m_targetDate;
 
     /**
      * コンストラクタ
      */
-    public SessionLogDatas(){
+    public SessionLogDatas( LocalDate targetDate ){
         SessionLogDatas.m_idx_count = -1;
-         this.m_tempdata = new ArrayList<String>();
+        this.m_tempdata = new ArrayList<String>();
+        this.m_targetDate = targetDate;
     }
 
     /**
@@ -139,8 +141,8 @@ public class SessionLogDatas {
      * @param line
      * @return
      */
-    public Optional<LogBasicData> setLogBasic( int id, LocalDate targetDate, String line ){
-        String sYear = targetDate.getYear() + "";
+    public Optional<LogBasicData> setLogBasic( int id, String line ){
+        String sYear = this.m_targetDate.getYear() + "";
         Matcher m = LogPatterns.PTN_LOGBASIC.matcher(line);
         if (!m.matches()) return Optional.empty();
 
@@ -152,7 +154,7 @@ public class SessionLogDatas {
         // 日時
         String ts = (sYear + " " + m.group(1)) .replaceAll("\\s+", " ") .trim();
         logTime = LocalDateTime.parse(ts, LogPatterns.FMT_LOG_DATETIME);
-        if ( logTime.getMonthValue() == 1 && targetDate.getMonthValue() == 12 ){
+        if ( logTime.getMonthValue() == 1 && this.m_targetDate.getMonthValue() == 12 ){
             // targetDateが12月で、Logが1月の場合は、ログを翌年とみなす。
             logTime = LocalDateTime.parse(ts, LogPatterns.FMT_LOG_DATETIME).plusMonths(1);
         }
@@ -171,6 +173,7 @@ public class SessionLogDatas {
         return Optional.ofNullable( new LogBasicData(id, logTime, program, pid, message) );
     }
 
+    public LocalDate getTargetDate(){ return this.m_targetDate; }
     /**
      * 新しいログを1件作成(idは新規採番)
      * @return id
@@ -388,20 +391,20 @@ public class SessionLogDatas {
      * @param cfg
      * @param targetDate
      */
-    public void save( Mfe2Config cfg, LocalDate targetDate){
+    public void save( Mfe2Config cfg ){
         DateTimeFormatter ymFmt  = DateTimeFormatter.ofPattern("yyyyMM");
         DateTimeFormatter ymdFmt = DateTimeFormatter.ofPattern("yyyyMMdd");
 
         // logDir/yyyyMM
         Path baseDir = Paths.get( cfg.getDataFilePath() + "session_logs/");
-        Path logDir = baseDir.resolve(targetDate.format(ymFmt));
+        Path logDir = baseDir.resolve( this.m_targetDate.format(ymFmt));
 
         // 上書き保存
         try {
             Files.createDirectories(logDir);
             // log_yyyyMMdd.txt
-            Path tmpFile = logDir.resolve( "log_" + targetDate.format(ymdFmt) + ".tmp" );
-            Path logFile = logDir.resolve( "log_" + targetDate.format(ymdFmt) + ".txt" );
+            Path tmpFile = logDir.resolve( "log_" + this.m_targetDate.format(ymdFmt) + ".tmp" );
+            Path logFile = logDir.resolve( "log_" + this.m_targetDate.format(ymdFmt) + ".txt" );
 
             Files.write(
                 tmpFile,
@@ -424,7 +427,7 @@ public class SessionLogDatas {
      * @param targetDate
      * @return
      */
-    public boolean load( Mfe2Config cfg, LocalDate targetDate){
+    public boolean load( Mfe2Config cfg ){
         this.m_tempdata.clear();
 
         DateTimeFormatter ymFmt  = DateTimeFormatter.ofPattern("yyyyMM");
@@ -432,8 +435,8 @@ public class SessionLogDatas {
 
         // logDir/yyyyMM
         Path baseDir = Paths.get( cfg.getDataFilePath() + "session_logs/");
-        Path logDir = baseDir.resolve(targetDate.format(ymFmt));
-        Path logFile = logDir.resolve( "log_" + targetDate.format(ymdFmt) + ".txt" );
+        Path logDir = baseDir.resolve( this.m_targetDate.format(ymFmt));
+        Path logFile = logDir.resolve( "log_" + this.m_targetDate.format(ymdFmt) + ".txt" );
 
         try ( var lines = Files.lines( logFile, StandardCharsets.UTF_8) ) {
             lines.forEach( this.m_tempdata::add );
