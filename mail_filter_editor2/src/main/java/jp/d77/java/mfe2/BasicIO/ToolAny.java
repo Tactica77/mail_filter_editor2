@@ -1,5 +1,7 @@
 package jp.d77.java.mfe2.BasicIO;
 
+import java.time.Duration;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -146,5 +148,16 @@ public class ToolAny {
         public String[] keys(){
             return this.data_cnt.keySet().toArray( new String[0] );
         }
+    }
+
+    /**
+     * 指定した期間の秒数を算出する
+     * @param start
+     * @param end
+     * @return
+     */
+    public static long secDiff( LocalDateTime start, LocalDateTime end ){
+        if ( start == null || end == null ) return 0L;
+        return Duration.between( start, end ).getSeconds();
     }
 }

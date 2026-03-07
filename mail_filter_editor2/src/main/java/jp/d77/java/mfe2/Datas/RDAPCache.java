@@ -55,7 +55,7 @@ public class RDAPCache extends StorableConfig{
      * RDAPデータをインターネットから取得するかのフラグ
      * @param rdap_get false=取得しない
      */
-    public void rdap_get_flag( boolean rdap_get ){
+    public void server_get_flag( boolean rdap_get ){
         this.m_rdap_get = rdap_get;
     }
 

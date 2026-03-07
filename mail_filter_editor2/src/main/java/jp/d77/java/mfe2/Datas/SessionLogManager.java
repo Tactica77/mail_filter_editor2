@@ -1,7 +1,9 @@
 package jp.d77.java.mfe2.Datas;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
@@ -49,7 +51,7 @@ public class SessionLogManager {
      * SessionLogを読み込み(無ければ作成)
      * @param targetDate
      */
-    public void load( LocalDate targetDate ){
+    public void load( LocalDate targetDate, Integer targetId ){
         Optional<String> d = this.date2str(targetDate);
         if ( d.isEmpty() ) return;
 
@@ -62,7 +64,7 @@ public class SessionLogManager {
 
         // ログを分析
         SessionLogAnalyse  sLogDetail = new SessionLogAnalyse( sd );
-        sLogDetail.analyseLog( this.m_cfg );
+        sLogDetail.analyseLog( this.m_cfg, targetId );
 
         this.m_sessionLog.put( d.get(), sd );
     }
@@ -88,9 +90,18 @@ public class SessionLogManager {
         return Optional.ofNullable( this.m_sessionLog.get( targetDate ) );
     }
 
+    @Deprecated
     public String[] keys(){
         return this.m_sessionLog.keySet().stream()
             .sorted()
             .toArray(String[]::new);
+    }
+
+    public LocalDate[] getDates(){
+        List<LocalDate> dates = new ArrayList<>();
+        for ( String day: this.m_sessionLog.keySet().stream().sorted().toList() ){
+            if ( ToolDate.YMD2LocalDate(day).isPresent() ) dates.add( ToolDate.YMD2LocalDate(day).get() );
+        }
+        return dates.toArray( new LocalDate[0] );
     }
 }

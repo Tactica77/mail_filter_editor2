@@ -143,14 +143,14 @@ public class ToolRDAP {
                 Matcher matcher = pattern.matcher(key);
                 if (matcher.find()) {
                     int i = Integer.parseInt(matcher.group(1));
-                    String res = "";
-                    if ( data.params.containsKey( "cidr_" + i ) ) res = data.params.get( "cidr_" + i );
-                    if ( key.endsWith( "v4prefix" ) ){
-                        res += node.get(key);
-                        data.set( "cidr_" + i, res );
-                    }else if ( key.endsWith( "length" ) ){
-                        res += "/" + node.get(key);
-                        data.set( "cidr_" + i, res );
+
+                    if ( node.containsKey( "cidr0_cidrs[" + i + "].v4prefix" )
+                        && node.containsKey( "cidr0_cidrs[" + i + "].length" ) ){
+                        data.set( "cidr_" + i
+                            , node.get("cidr0_cidrs[" + i + "].v4prefix")
+                            + "/"
+                            + node.get("cidr0_cidrs[" + i + "].length")
+                        );
                     }
                 }                
             }

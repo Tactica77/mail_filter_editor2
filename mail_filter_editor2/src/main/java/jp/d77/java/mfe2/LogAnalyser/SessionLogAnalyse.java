@@ -21,17 +21,19 @@ public class SessionLogAnalyse {
         this.m_slog = slog;
     }
 
-    public void analyseLog( Mfe2Config cfg ){
+    public void analyseLog( Mfe2Config cfg, Integer targetId ){
         Debugger.TracePrint();
         RDAPCache cache = new RDAPCache( cfg );
         cache.load( this.m_slog.getTargetDate() );
-        cache.rdap_get_flag( true );
+        cache.server_get_flag( true );
 
         for ( String line: this.m_slog.getTempData() ){
             splResult spl = this.splitSessionLog( this.m_slog.getTargetDate(), line).orElse(null);
             if ( spl == null ) continue;
+            if ( targetId != null ){
+                if ( targetId != spl.id ) continue;
+            }
             LogBasicData lb = this.m_slog.setLogBasic( spl.id(), spl.line() ).orElse(null);
-            //LogBasicData lb = this.m_slog.SessionLog2LogBasic(targetDate, line).orElse(null);
             if ( lb == null ) continue;
 
             int id = lb.id();

@@ -133,7 +133,7 @@ public class BlockDatas {
             Matcher m = LINE_PATTERN.matcher(line);
             if (!m.matches()) continue; // 異常行は無視
 
-            boolean enabled = m.group(1) != null;
+            boolean enabled = m.group(1) == null;
             String ip = m.group(2);
             String dateStr = m.group(3);
             String cc = m.group(4);

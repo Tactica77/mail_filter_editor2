@@ -11,6 +11,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -446,5 +447,45 @@ public class SessionLogDatas {
         }
         Debugger.InfoPrint( "loaded file=" + logFile + " lines=" + this.m_tempdata.size() );
         return true;
+    }
+
+    /**
+     * ログから得られた注目すべき問題をリスト化
+     * @param id
+     * @return
+     */
+    public String[] getResult( int id ){
+        List<String> res = new ArrayList<>();
+        res.addAll( Arrays.asList( this.getPropS( id, "relay_status" ) ) );
+        res.addAll( Arrays.asList( this.getPropS( id, "error" ) ) );
+        if ( res.size() <= 0 ){
+            res.add( "connect only" );
+        }
+        return res.toArray( new String[0] );
+    }
+
+    /**
+     * 結果的に送受信できたのか?
+     * @param id
+     * @return
+     */
+    public boolean isError( int id ){
+        // Result check
+        if ( this.getLog(id).length >= 2
+            && this.getPropS( id, "error" ).length <= 0
+            && this.getPropS( id, "relay_status" ).length <= 0
+            ){
+            // ログが2行しかなく、何もステータスが無い場合はエラー
+            return true;
+        }
+        if (
+            ! this.containsValue( id, "relay_status", "send null")
+            && ! this.containsValue( id, "relay_status", "send local")
+            && ! this.containsValue( id, "relay_status", "send remote")
+            ){
+            // send云々が無ければエラー(それ以外のメッセージはワーニング扱い)
+            return true;
+        }        
+        return false;
     }
 }
