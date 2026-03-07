@@ -70,6 +70,7 @@ public class FilterDatas {
 
     public Optional<IpFilter> getFilter( String cidr ){
         IpFilter ipf = new IpFilter(cidr, "check");
+
         for ( IpFilter chk_ipf: this.m_ipfilter ){
             if ( this.isWithin( chk_ipf, ipf) ){
                 return Optional.ofNullable( chk_ipf );
@@ -79,7 +80,7 @@ public class FilterDatas {
     }
 
     /**
-     * レンジ範囲が、ipf_a > ipf_bかを返す
+     * レンジ範囲が、ipf_a >= ipf_bかを返す
      * 上記以外の他、両方が被らない範囲があるならfalseを返す
      * @param ipf_a
      * @param ipf_b
@@ -89,9 +90,8 @@ public class FilterDatas {
         if ( ! ipf_a.isEnable() ) return false;
         if ( ! ipf_b.isEnable() ) return false;
         
-        if ( ipf_a.m_startIp <= ipf_b.m_startIp ){}else return false;
-        if ( ipf_a.m_endIp >= ipf_b.m_endIp ){}else return false;
-        return true;
+        if ( ipf_a.m_startIp <= ipf_b.m_startIp && ipf_a.m_endIp >= ipf_b.m_endIp ) return true;
+        return false;
     }
 
     public boolean load(String filename) {

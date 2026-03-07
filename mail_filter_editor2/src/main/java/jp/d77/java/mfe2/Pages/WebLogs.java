@@ -76,10 +76,6 @@ public class WebLogs extends AbstractMfe{
                 this.m_slog.load( d, null );
             }
         }
-
-        String t = this.getConfig().get( "HtmlTitle" ).orElse("");
-        t += " - " + this.m_targetDate + " - " + this.m_edit_days + "days";
-        this.getConfig().overwrite( "HtmlTitle", t );
     }
 
     // 3:post_save_reload
@@ -108,6 +104,9 @@ public class WebLogs extends AbstractMfe{
     @Override
     public void displayNavbar(){
         super.displayNavbar();
+        String t = this.getConfig().get( "HtmlTitle" ).orElse("");
+        t += " - " + this.m_targetDate + " - " + this.m_edit_days + "days";
+        this.getConfig().overwrite( "HtmlTitle", t );
     }
 
     // 7:displayInfo

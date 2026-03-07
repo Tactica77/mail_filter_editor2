@@ -133,7 +133,7 @@ public class WebLogsList {
             for ( String ip: sd.getPropS( id, "ip" ) ){
                 if ( filter == null ){
                     Optional<IpFilter> ipf = this.m_filter.getFilter( ip );
-                    if ( ipf.isPresent() && ! ipf.get().isEnable() ){
+                    if ( ipf.isPresent() && ipf.get().isEnable() ){
                         filter = HtmlString.HtmlEscape( ipf.get().m_cidr ) + "<BR>" + HtmlString.HtmlEscape( ipf.get().m_type + " " );
                     }
                 }
