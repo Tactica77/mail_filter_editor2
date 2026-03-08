@@ -39,8 +39,8 @@ public class WebBlockEditor extends AbstractMfe{
     public void load() {
         super.load();
         FilterDatas fd = new FilterDatas();
-        fd.load( this.getConfig().getDataFilePath() + "/country_filter.txt" );
-        this.m_bd = new BlockDatas( fd );
+        fd.loadCountryFilter( this.getConfig().getDataFilePath() + "/country_filter.txt" );
+        this.m_bd = new BlockDatas( fd, "black list" );
         this.m_bd.load( this.getConfig().getDataFilePath() + "/block_list_black.txt" );
     }
 

@@ -94,6 +94,14 @@ public class SessionLogAnalyse {
             this.m_slog.addProp( lb.logTime(), id, "fqdn", ha.get().fqdn() );
         }
 
+        // From
+        s = LogPatterns.matcher( LogPatterns.PTN_ADDRESS_FROM, lb.message(), 1 );
+        if ( s.isPresent() ) this.m_slog.addProp( lb.logTime(), id, "from", s.get() );
+
+        // To
+        s = LogPatterns.matcher( LogPatterns.PTN_ADDRESS_TO, lb.message(), 1 );
+        if ( s.isPresent() ) this.m_slog.addProp( lb.logTime(), id, "to", s.get() );
+
         if ( lb.message().startsWith( "connect from " ) ){
             // Feb  4 11:37:07 afef27cd6bf6 postfix/smtpd[14562]: connect from fgmailer.com[35.187.195.50]
             // 処理なし

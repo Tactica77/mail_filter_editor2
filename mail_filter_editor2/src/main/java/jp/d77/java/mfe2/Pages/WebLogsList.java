@@ -69,9 +69,13 @@ public class WebLogsList {
         this.m_slog = slog;
 
         this.m_filter = new FilterDatas();
-        this.m_filter.load( this.m_cfg.getDataFilePath() + "/country_filter.txt" );
-        BlockDatas bd = new BlockDatas( this.m_filter );
+        this.m_filter.loadCountryFilter( this.m_cfg.getDataFilePath() + "/country_filter.txt" );
+
+        BlockDatas bd = new BlockDatas( this.m_filter, "black list" );
         bd.load( this.m_cfg.getDataFilePath() + "/block_list_black.txt" );
+
+        bd = new BlockDatas( this.m_filter, "spot block" );
+        bd.load( this.m_cfg.getDataFilePath() + "/block_list_spot.txt" );
     }
 
     public String display(){

@@ -69,50 +69,14 @@ public abstract class AbstractMfe extends AbstractWebPage implements InterfaceWe
         this.getHtml().addString( BSS.getNavbarLinkItem( BSOpts.init().title("RDAP").href("/rdap") ) );
         this.getHtml().addString( BSS.getNavbarLinkItem( BSOpts.init().title("RSPAMD").href("https://rspamd.d77.jp/").target("_blank") ) );
 
-
-        /*
         this.getHtml().addString(
             BSS.NavbarDropDown(
-                "アップロード"
-                , BSS.getNavbarLinkItem( BSOpts.init().title("入出金明細") )
-                , BSS.getNavbarLinkItem( BSOpts.init().title("ハマギン(メイン)").href("/uploads?mode=HMG_M").fclass("dropdown-item") )
-                , BSS.getNavbarLinkItem( BSOpts.init().title("ハマギン(引き落とし用)").href("/uploads?mode=HMG_S").fclass("dropdown-item") )
-                , BSS.NavbarHR()
-                , BSS.getNavbarLinkItem( BSOpts.init().title("SBI(代表口座)").href("/uploads?mode=SBI_M").fclass("dropdown-item") )
-                , BSS.getNavbarLinkItem( BSOpts.init().title("SBI(ハイブリッド口座)").href("/uploads?mode=SBI_S").fclass("dropdown-item") )
-                , BSS.getNavbarLinkItem( BSOpts.init().title("SBI入出金明細").href("/uploads?mode=SBI_INOUT_MEISAI").fclass("dropdown-item") )
-                , BSS.getNavbarLinkItem( BSOpts.init().title("SBI保有証券").href("/uploads?mode=SBI_KABU").fclass("dropdown-item") )
-                , BSS.NavbarHR()
-                , BSS.getNavbarLinkItem( BSOpts.init().title("クレカ").href("/uploads?mode=CRECA").fclass("dropdown-item") )
-                , BSS.getNavbarLinkItem( BSOpts.init().title("取引履歴").href("/uploads?mode=TRADE_HIST").fclass("dropdown-item") )
-//                , BSS.getNavbarLinkItem( BSOpts.init().title("時価(月末)").href("/uploads?mode=MARKET_VALUE").fclass("dropdown-item") )
+                "CLI"
+                , BSS.getNavbarLinkItem( BSOpts.init().title("Session Update(Today)").href("/cli_update?mode=sessionlog&edit_diffdate=1&submit_gui_on=1").fclass("dropdown-item") )
+                , BSS.getNavbarLinkItem( BSOpts.init().title("Create Block Data").href("/cli_update?mode=blockdata&submit_gui_on=1").fclass("dropdown-item") )
             )
         );
 
-        this.getHtml().addString(
-            BSS.NavbarDropDown(
-                "素データ"
-                , BSS.getNavbarLinkItem( BSOpts.init().title("入出金明細") )
-                , BSS.getNavbarLinkItem( BSOpts.init().title("ハマギン(メイン)").href("/deposit_details?mode=HMG_M").fclass("dropdown-item") )
-                , BSS.getNavbarLinkItem( BSOpts.init().title("ハマギン(引き落とし用)").href("/deposit_details?mode=HMG_S").fclass("dropdown-item") )
-                , BSS.NavbarHR()
-                , BSS.getNavbarLinkItem( BSOpts.init().title("SBI(代表口座)").href("/deposit_details?mode=SBI_M").fclass("dropdown-item") )
-                , BSS.getNavbarLinkItem( BSOpts.init().title("SBI(ハイブリッド口座)").href("/deposit_details?mode=SBI_S").fclass("dropdown-item") )
-                , BSS.getNavbarLinkItem( BSOpts.init().title("SBI入出金明細").href("/deposit_details?mode=SBI_INOUT_MEISAI").fclass("dropdown-item") )
-                , BSS.getNavbarLinkItem( BSOpts.init().title("SBI保有証券").href("/deposit_details?mode=SBI_KABU").fclass("dropdown-item") )
-                , BSS.NavbarHR()
-                , BSS.getNavbarLinkItem( BSOpts.init().title("基本収支").href("/deposit_details?mode=BASE_SYUSHI").fclass("dropdown-item") )
-                , BSS.getNavbarLinkItem( BSOpts.init().title("クレカ").href("/deposit_details?mode=CRECA").fclass("dropdown-item") )
-                , BSS.getNavbarLinkItem( BSOpts.init().title("取引履歴").href("/deposit_details?mode=TRADE_HIST").fclass("dropdown-item") )
-                , BSS.getNavbarLinkItem( BSOpts.init().title("時価(月末)").href("/deposit_details?mode=MARKET_VALUE").fclass("dropdown-item") )
-            )
-        );
-*/
-//        this.getHtml().addString( BSS.getNavbarLinkItem( BSOpts.init().title("保有株").href("/sharehold") ) );
-//        this.getHtml().addString( BSS.getNavbarLinkItem( BSOpts.init().title("収入・支出").href("/profit_loss") ) );
-        //this.getHtml().addString( BSS.getNavbarLinkItem( BSOpts.init().title("設定").href("/config") ) );
-        //this.m_html.addString( BSS.getNavbarLinkItem( BSOpts.init().title("出費").href("/expenses") ) );
-//        this.getHtml().addString( BSS.getNavbarLinkItem( BSOpts.init().title("AI分析").href("/analysis_ai") ) );
         this.getHtml().addString( BSS.getNavbarFooter() );
 
         this.getHtml().addStringCr( "<DIV class=\"container-fluid\">")

@@ -40,6 +40,12 @@ public class FilterDatas {
     }
     private List<IpFilter>  m_ipfilter = new ArrayList<>();
 
+    /**
+     * 
+     * @param cidr_string
+     * @param type
+     * @return true = 追加した
+     */
     public boolean add( String cidr_string, String type ){
         List<IpFilter> removes = new ArrayList<>();
 
@@ -86,7 +92,7 @@ public class FilterDatas {
      * @param ipf_b
      * @return
      */
-    private boolean isWithin( IpFilter ipf_a, IpFilter ipf_b ){
+    protected boolean isWithin( IpFilter ipf_a, IpFilter ipf_b ){
         if ( ! ipf_a.isEnable() ) return false;
         if ( ! ipf_b.isEnable() ) return false;
         
@@ -94,7 +100,7 @@ public class FilterDatas {
         return false;
     }
 
-    public boolean load(String filename) {
+    public boolean loadCountryFilter( String filename ) {
         Debugger.TracePrint();
         this.m_ipfilter.clear();
         int lc = 0;

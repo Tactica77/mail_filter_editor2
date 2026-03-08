@@ -2,6 +2,7 @@ package jp.d77.java.mfe2.Datas;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -100,6 +101,14 @@ public class SessionLogManager {
     public LocalDate[] getDates(){
         List<LocalDate> dates = new ArrayList<>();
         for ( String day: this.m_sessionLog.keySet().stream().sorted().toList() ){
+            if ( ToolDate.YMD2LocalDate(day).isPresent() ) dates.add( ToolDate.YMD2LocalDate(day).get() );
+        }
+        return dates.toArray( new LocalDate[0] );
+    }
+
+    public LocalDate[] getDatesReverce(){
+        List<LocalDate> dates = new ArrayList<>();
+        for ( String day: this.m_sessionLog.keySet().stream().sorted( Comparator.reverseOrder() ).toList() ){
             if ( ToolDate.YMD2LocalDate(day).isPresent() ) dates.add( ToolDate.YMD2LocalDate(day).get() );
         }
         return dates.toArray( new LocalDate[0] );

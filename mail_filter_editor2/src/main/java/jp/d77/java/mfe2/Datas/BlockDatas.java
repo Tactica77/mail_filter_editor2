@@ -44,9 +44,11 @@ public class BlockDatas {
     );
     private final List<BlockData> m_block_datas = new ArrayList<>();
     private FilterDatas m_filter = null;
+    private String m_blocktype;
 
-    public BlockDatas ( FilterDatas filter ){
+    public BlockDatas ( FilterDatas filter, String blocktype ){
         this.m_filter = filter;
+        this.m_blocktype = blocktype;
     }
 
     /**
@@ -61,7 +63,7 @@ public class BlockDatas {
             }
         }
         this.m_block_datas.add(rec);
-        this.m_filter.add( rec.ip, "black_list" );
+        if ( this.m_filter != null ) this.m_filter.add( rec.ip, this.m_blocktype );
         return true;
     }
 
@@ -97,6 +99,7 @@ public class BlockDatas {
     }
 
     private void setParentIp(){
+        if ( this.m_filter == null ) return;
         for( BlockData bd: this.m_block_datas ){
             IpFilter ipf = this.m_filter.getFilter( bd.ip ).orElse(null);
             if ( ipf == null ) continue;
@@ -185,13 +188,14 @@ public class BlockDatas {
         try {
             Path tmpPath = Path.of(filename + ".tmp");
             Path filePath = Path.of(filename);
-            Path fileBack = Path.of(filename + ".bak");
+            Path backPath = Path.of(filename + ".bak");
             Files.write( tmpPath, output);
-            Files.copy( filePath, fileBack, StandardCopyOption.REPLACE_EXISTING);
-            Files.copy( tmpPath, filePath, StandardCopyOption.REPLACE_EXISTING);
-            Files.delete( tmpPath );
+            if (Files.exists(filePath)) Files.copy( filePath, backPath, StandardCopyOption.REPLACE_EXISTING);
+            if (Files.exists(tmpPath)) Files.copy( tmpPath, filePath, StandardCopyOption.REPLACE_EXISTING);
+            if (Files.exists(tmpPath)) Files.delete( tmpPath );
             return Optional.empty();
         }catch ( IOException e ) {
+            e.printStackTrace();
             Debugger.ErrorPrint( "file=" + filename + " e=" + e.getMessage() );
             return Optional.ofNullable( e.getMessage() );
         }

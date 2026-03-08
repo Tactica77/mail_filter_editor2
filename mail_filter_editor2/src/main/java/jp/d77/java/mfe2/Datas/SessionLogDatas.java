@@ -413,8 +413,8 @@ public class SessionLogDatas {
                 StandardOpenOption.CREATE,
                 StandardOpenOption.TRUNCATE_EXISTING
             );
-            Files.copy( tmpFile, logFile, StandardCopyOption.REPLACE_EXISTING);
-            Files.delete( tmpFile );
+            if (Files.exists(tmpFile)) Files.copy( tmpFile, logFile, StandardCopyOption.REPLACE_EXISTING);
+            if (Files.exists(tmpFile)) Files.delete( tmpFile );
 
             Debugger.InfoPrint( "saved file=" + logFile + " size=" + this.m_tempdata.size() );
         } catch (IOException e) {

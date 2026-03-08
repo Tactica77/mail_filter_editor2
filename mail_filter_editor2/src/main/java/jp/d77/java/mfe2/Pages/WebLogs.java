@@ -69,7 +69,7 @@ public class WebLogs extends AbstractMfe{
             this.m_slog.load( this.m_targetDate, this.m_select_id );
         }else{
             LocalDate startDate = this.m_targetDate.minusDays( this.m_edit_days - 1);
-            for (LocalDate d = startDate; !d.isAfter( m_targetDate ); d = d.plusDays(1)) {
+            for (LocalDate d = startDate; !d.isAfter( this.m_targetDate ); d = d.plusDays(1)) {
                 if ( this.getConfig().get( "submit_log_create" ).isPresent() ) {
                     this.m_slog.create( d );
                 }
