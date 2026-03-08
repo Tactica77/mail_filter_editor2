@@ -66,7 +66,7 @@ public class ToolAny {
         String ret = "";
         for ( String l: lines ){
             if ( l.length() <= 0 ) continue;
-            if ( ret.length() > 0 ) ret += "<BR>";
+            if ( ret.length() > 0 ) ret += "<BR>\n";
             ret += l;
         }
         return Optional.ofNullable( ret );
