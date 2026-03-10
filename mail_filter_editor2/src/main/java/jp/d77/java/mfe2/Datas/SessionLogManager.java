@@ -29,7 +29,7 @@ public class SessionLogManager {
      */
     private Optional<String> date2str( LocalDate targetDate ){
         if ( targetDate.isAfter( LocalDate.now() ) ) return Optional.empty();
-        String d = ToolDate.Fromat( targetDate, "uuuuMMdd" ).orElse(null);
+        String d = ToolDate.Format( targetDate, "uuuuMMdd" ).orElse(null);
         if ( d == null ) return Optional.empty();
         return Optional.ofNullable( d );
     }
@@ -101,7 +101,7 @@ public class SessionLogManager {
     public LocalDate[] getDates(){
         List<LocalDate> dates = new ArrayList<>();
         for ( String day: this.m_sessionLog.keySet().stream().sorted().toList() ){
-            if ( ToolDate.YMD2LocalDate(day).isPresent() ) dates.add( ToolDate.YMD2LocalDate(day).get() );
+            if ( ToolDate.Str2LocalDate(day).isPresent() ) dates.add( ToolDate.Str2LocalDate(day).get() );
         }
         return dates.toArray( new LocalDate[0] );
     }
@@ -109,7 +109,7 @@ public class SessionLogManager {
     public LocalDate[] getDatesReverce(){
         List<LocalDate> dates = new ArrayList<>();
         for ( String day: this.m_sessionLog.keySet().stream().sorted( Comparator.reverseOrder() ).toList() ){
-            if ( ToolDate.YMD2LocalDate(day).isPresent() ) dates.add( ToolDate.YMD2LocalDate(day).get() );
+            if ( ToolDate.Str2LocalDate(day).isPresent() ) dates.add( ToolDate.Str2LocalDate(day).get() );
         }
         return dates.toArray( new LocalDate[0] );
     }

@@ -11,8 +11,6 @@ import jp.d77.java.mfe2.BasicIO.HtmlGraph;
 import jp.d77.java.mfe2.BasicIO.Mfe2Config;
 import jp.d77.java.mfe2.BasicIO.ToolAny;
 import jp.d77.java.mfe2.BasicIO.HtmlGraph.GRAPH_TYPE;
-import jp.d77.java.mfe2.BasicIO.ToolAny.arrayCounter;
-import jp.d77.java.mfe2.BasicIO.ToolAny.arrayString;
 import jp.d77.java.mfe2.Datas.BlockDatas;
 import jp.d77.java.mfe2.Datas.FilterDatas;
 import jp.d77.java.mfe2.Datas.FilterDatas.IpFilter;
@@ -21,7 +19,10 @@ import jp.d77.java.mfe2.Datas.RDAPCache.RdapResult;
 import jp.d77.java.mfe2.Datas.SessionLogDatas;
 import jp.d77.java.mfe2.Datas.SessionLogDatas.LogBasicData;
 import jp.d77.java.mfe2.Datas.SessionLogManager;
+import jp.d77.java.mfe2.Datas.SpotBlockDatas;
 import jp.d77.java.mfe2.Pages.WebBlockEditor.BlockFormData;
+import jp.d77.java.tools.BasicIO.ToolArrays.arrayCounter;
+import jp.d77.java.tools.BasicIO.ToolArrays.arrayString;
 import jp.d77.java.tools.BasicIO.ToolDate;
 import jp.d77.java.tools.HtmlIO.BSOpts;
 import jp.d77.java.tools.HtmlIO.BSSForm;
@@ -74,8 +75,8 @@ public class WebLogsList {
         BlockDatas bd = new BlockDatas( this.m_filter, "black list" );
         bd.load( this.m_cfg.getDataFilePath() + "/block_list_black.txt" );
 
-        bd = new BlockDatas( this.m_filter, "spot block" );
-        bd.load( this.m_cfg.getDataFilePath() + "/block_list_spot.txt" );
+        SpotBlockDatas sbd = new SpotBlockDatas( this.m_filter, "spot block" );
+        sbd.load( this.m_cfg.getDataFilePath() + "/block_list_spot.txt" );
     }
 
     public String display(){
@@ -103,7 +104,7 @@ public class WebLogsList {
             }
         }
         for ( LocalDate d: this.m_data_cnt_ip2.keySet().stream().sorted().toList()  ){
-            String YMD = "\"" + ToolDate.Fromat( d, "uuuu/MM/dd" ).orElse( "???" ) + "\"";
+            String YMD = "\"" + ToolDate.Format( d, "uuuu/MM/dd" ).orElse( "???" ) + "\"";
             for ( String ip: this.m_data_cnt_ip2.get( d ).keys() ){
                 if ( graph.getDbf().getProp( ip ).isEmpty() ) continue;
                 graph.getDbf().set( YMD, ip, this.m_data_cnt_ip2.get( d ).get( ip ) * 1.0f );
@@ -173,11 +174,11 @@ public class WebLogsList {
 
                 // time
                 ,
-                    ToolDate.Fromat(date, "MM/dd").orElse("???")
+                    ToolDate.Format(date, "MM/dd").orElse("???")
                     + "<BR>"
-                    + ToolDate.Fromat( sd.getStart(id).orElse(null), "HH:mm:ss" ).orElse("???")
+                    + ToolDate.Format( sd.getStart(id).orElse(null), "HH:mm:ss" ).orElse("???")
                     +"-<BR>"
-                    + ToolDate.Fromat( sd.getEnd(id).orElse(null), "HH:mm:ss" ).orElse("???")
+                    + ToolDate.Format( sd.getEnd(id).orElse(null), "HH:mm:ss" ).orElse("???")
                     + "(" + ToolAny.secDiff( sd.getStart(id).orElse(null), sd.getEnd(id).orElse(null) ) + "s)"
                 
                 // logs
@@ -286,7 +287,7 @@ public class WebLogsList {
                 f.tableTdHtml( ToolAny.joinDisp( display_data.IP.toArray( new String[0] ) ).orElse("?"), add_opt);
             }else{
                 f.tableTdHtml( ToolAny.joinDisp( display_data.IP.toArray( new String[0] ) ).orElse("?")
-                + ToolAny.IPLink( new BlockFormData( ToolDate.Fromat( LocalDate.now(), "uuuuMMdd").orElse( null), cc, ip, org ) ), add_opt);
+                + ToolAny.IPLink( new BlockFormData( ToolDate.Format( LocalDate.now(), "uuuuMMdd").orElse( null), cc, ip, org ) ), add_opt);
             }
             
             // CIDR
@@ -295,7 +296,7 @@ public class WebLogsList {
             }else{
                 f.tableTdHtml(
                     ToolAny.joinDisp( display_data.cidr.toArray( new String[0] ) ).orElse("?")
-                    + ToolAny.IPLink( new BlockFormData( ToolDate.Fromat( LocalDate.now(), "uuuuMMdd").orElse( null), cc, cidrs, org ) )
+                    + ToolAny.IPLink( new BlockFormData( ToolDate.Format( LocalDate.now(), "uuuuMMdd").orElse( null), cc, cidrs, org ) )
                     , add_opt
                 );
             }
@@ -367,7 +368,7 @@ public class WebLogsList {
                     ) continue;
                 i++;
                 f.tableRowTop()
-                .tableTd( ToolDate.Fromat( lb.logTime(), "yyyy-MM-dd HH:mm:ss" ).orElse( "???" ) )
+                .tableTd( ToolDate.Format( lb.logTime(), "yyyy-MM-dd HH:mm:ss" ).orElse( "???" ) )
                 .tableTd( lb.program() )
                 .tableTd( lb.pid() + "" )
                 .tableTd( lb.message() )

@@ -4,9 +4,6 @@ import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 
 import jp.d77.java.mfe2.Pages.WebBlockEditor.BlockFormData;
@@ -83,71 +80,10 @@ public class ToolAny {
 
     public static String IPLink( BlockFormData bfd ){
         return "<A href=\"/rdap?edit_ip=" + HtmlString.HtmlEscape( bfd.Cidr() ) + "\" target=\"_blank\">(R)</A>"
-            + "<A href=\"/block_editor?edit_cidr=" + HtmlString.UriEscape( bfd.Cidr() )
+            + "<A href=\"/block_list?edit_cidr=" + HtmlString.UriEscape( bfd.Cidr() )
             + "&edit_cc=" + HtmlString.UriEscape( bfd.Cc() )
             + "&edit_org=" + HtmlString.UriEscape( bfd.org() )
             + "\" target=\"_blank\">(B)</A>";
-    }
-
-
-    /**
-     * KVS。一つのキーに対して複数のvalueを持たせられる
-     */
-    public static class arrayString {
-        Map<String, List<String>> data_work = new HashMap<>();
-
-        public void clear(){
-            this.data_work.clear();
-        }
-
-        public void add( String key, String value ){
-            if ( value == null || value.isBlank() ) return;
-            if ( ! this.data_work.containsKey(key) ) this.data_work.put( key, new ArrayList<>() );
-            this.data_work.get(key).add(value);
-        }
-
-        public String[] gets( String key ){
-            if ( ! this.data_work.containsKey(key) ) return new String[0];
-            return this.data_work.get(key).toArray( new String[0] );
-        }
-
-        public List<String> toArray( String key ){
-            if ( ! this.data_work.containsKey(key) ) return new ArrayList<>();
-            return this.data_work.get(key);
-        }
-
-        public String join( String delimiter,  String key ){
-            return String.join( delimiter, this.gets(key) );
-        }
-    }
-
-    /**
-     * 変数型カウンタ
-     */
-    public static class arrayCounter {
-        Map<String, Integer> data_cnt = new HashMap<>();
-
-        public void clear(){
-            this.data_cnt.clear();
-        }
-
-        public void add( String key ){
-            this.add( key, 1 );
-        }
-
-        public void add( String key, Integer i ){
-            if ( i == null ) return;
-            this.data_cnt.put( key, this.get(key) + i );
-        }
-
-        public int get( String key ){
-            if ( ! this.data_cnt.containsKey(key) ) return 0;
-            return this.data_cnt.get(key);
-        }
-
-        public String[] keys(){
-            return this.data_cnt.keySet().toArray( new String[0] );
-        }
     }
 
     /**

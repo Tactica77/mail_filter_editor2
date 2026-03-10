@@ -26,7 +26,7 @@ public class WebLogsDetail {
     public String display( int id, LocalDate targetDate ){
         String res = "";
 
-        String displayYMD = ToolDate.Fromat( targetDate,"uuuu-MM-dd" ).orElse( "???" );
+        String displayYMD = ToolDate.Format( targetDate,"uuuu-MM-dd" ).orElse( "???" );
         BSSForm f;
 
         SessionLogDatas sd = this.m_slog.getData( targetDate ).orElse( null );
@@ -94,7 +94,7 @@ public class WebLogsDetail {
             if ( start == null ) start = lb.logTime();
 
             f.tableRowTop()
-            .tableTd( ToolDate.Fromat( lb.logTime(), "HH:mm:ss" ).orElse( "???" ) + "(" + ToolAny.secDiff( start, lb.logTime() ) + "s)" )
+            .tableTd( ToolDate.Format( lb.logTime(), "HH:mm:ss" ).orElse( "???" ) + "(" + ToolAny.secDiff( start, lb.logTime() ) + "s)" )
             .tableTd( lb.program() )
             .tableTd( lb.pid() + "" )
             .tableTd( lb.message() )

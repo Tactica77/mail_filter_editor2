@@ -33,27 +33,34 @@ public class IpTablesDatas extends FilterDatas {
         ipTablesData ipf = new ipTablesData( cidr_string, type );
         if ( ! ipf.isEnable() ) return false;
 
+        // 削除フラグを立てる。
+        // この後、country_filter、block_list_black、block_list_spotを読み込み、残すならDeleteフラグは消される
+        if ( type.equals( "iptables" ) ) ipf.setDelete( true );
+        else ipf.setAdd( true ); // 一旦新規追加フラグを立てる
+
         // 登録済みに含まれるか確認
         for ( ipTablesData chk_ipf: this.m_ipTablesData ){
             // 削除予定はチェック対象としない
-            if ( chk_ipf.isDelete() ) continue;
+            //if ( chk_ipf.isDelete() ) continue;
 
             // iptablesでは無い場合は追加フラグを立てる
-            if ( ! type.equals( "iptables" ) ) ipf.setAdd( true ); // 追加
+            //if ( ! type.equals( "iptables" ) ) ipf.setAdd( true ); // 追加
 
             if ( this.isWithin( chk_ipf, ipf ) ) {
+                // 同一、あるいはチェック対象が内包してる
                 if ( type.equals( "iptables" ) ){
-                    // 既にある定義で賄えるので消す
-                    ipf.setAdd( false );
-                    ipf.setDelete( true );
-                }else{
                     // 既にある定義で賄えるので追加しない
+                    return false;
+                }else{
+                    // 既にある定義を残す
+                    chk_ipf.setAdd( false );
+                    chk_ipf.setDelete( false );
                     return false;
                 }
             }
             if ( this.isWithin( ipf, chk_ipf ) ) {
                 // 元々ある方を消す
-                Debugger.WarnPrint( "remove " + chk_ipf.getCidr() + " Included " + ipf.getCidr() );
+                //Debugger.WarnPrint( "remove " + chk_ipf.getCidr() + " Included " + ipf.getCidr() );
                 chk_ipf.setAdd( false );
                 chk_ipf.setDelete( true );
             }

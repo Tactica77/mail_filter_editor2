@@ -8,11 +8,11 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
-import jp.d77.java.mfe2.BasicIO.ToolAny.arrayCounter;
 import jp.d77.java.mfe2.BasicIO.Mfe2Config;
 import jp.d77.java.mfe2.BasicIO.ToolRDAP;
 import jp.d77.java.tools.BasicIO.Debugger;
 import jp.d77.java.tools.BasicIO.StorableConfig;
+import jp.d77.java.tools.BasicIO.ToolArrays.arrayCounter;
 
 public class RDAPCache extends StorableConfig{
     private Mfe2Config m_cfg;

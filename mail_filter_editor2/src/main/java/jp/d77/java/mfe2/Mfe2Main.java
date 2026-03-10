@@ -86,13 +86,13 @@ public class Mfe2Main {
         return this.procWeb( web );
     }
 
-    @RequestMapping("/block_editor")  // ルートへこのメソッドをマップする
+    @RequestMapping("/block_list")  // ルートへこのメソッドをマップする
     public String BlockEditor( HttpServletRequest request ) {
         Debugger.init();
         Debugger.InfoPrint( "------ START ------" );
 
         // 表示用クラスの設定
-        AbstractWebPage web = new WebBlockEditor( new Mfe2Config( "/block_editor" ) );
+        AbstractWebPage web = new WebBlockEditor( new Mfe2Config( "/block_list" ) );
         this.setForm( request, web.getConfig() );
         web.getConfig().overwrite( "edit_select_cidr", request.getParameterValues("edit_select_cidr") );
 

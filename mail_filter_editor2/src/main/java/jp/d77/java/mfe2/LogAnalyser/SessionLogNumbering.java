@@ -45,7 +45,7 @@ public class SessionLogNumbering {
         //log.Load( targetDate );
         this.Load( this.m_ld.getTargetDate() );
 
-        String YMD = ToolDate.Fromat( this.m_ld.getTargetDate(), "yyyyMMdd").orElse("-");
+        String YMD = ToolDate.Format( this.m_ld.getTargetDate(), "yyyyMMdd").orElse("-");
 
         for ( int i = 0; i < this.m_log.size(); i ++ ){
             //if ( this.m_log.get(i).isEmpty() ) continue;
@@ -62,10 +62,10 @@ public class SessionLogNumbering {
 
             String tYMD;
             if ( id >= 0 ){
-                tYMD = ToolDate.Fromat( this.m_ld.getStart(id).orElse(null) , "yyyyMMdd").orElse("-");
+                tYMD = ToolDate.Format( this.m_ld.getStart(id).orElse(null) , "yyyyMMdd").orElse("-");
                 if ( YMD.equals( tYMD ) ) this.m_ld.getTempData().add( id + "<<->>" + this.m_log.get(i) );
             }else{
-                tYMD = ToolDate.Fromat( lb.logTime() , "yyyyMMdd").orElse("-");
+                tYMD = ToolDate.Format( lb.logTime() , "yyyyMMdd").orElse("-");
                 if ( YMD.equals( tYMD ) ) this.m_ld.getTempData().add( "-999<<->>" + this.m_log.get(i) );
             }
         }

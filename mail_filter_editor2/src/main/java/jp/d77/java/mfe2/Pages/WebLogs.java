@@ -29,7 +29,7 @@ public class WebLogs extends AbstractMfe{
         // 対象日の読み込み
         if ( this.getConfig().get( "edit_cal" ).isPresent() ) {
             // targetDateの読み込み
-            this.m_targetDate = ToolDate.YMD2LocalDate( this.getConfig().get( "edit_cal" ).get() ).orElse( null );
+            this.m_targetDate = ToolDate.Str2LocalDate( this.getConfig().get( "edit_cal" ).get() ).orElse( null );
         }
         if ( this.m_targetDate == null ){
             this.m_targetDate = LocalDate.now();
@@ -178,7 +178,7 @@ public class WebLogs extends AbstractMfe{
         .formInput(
             BSOpts.init("name", "edit_cal")
             .type( "date" )
-            .value( ToolDate.Fromat( this.m_targetDate, "uuuu-MM-dd" ).orElse( null ) )
+            .value( ToolDate.Format( this.m_targetDate, "uuuu-MM-dd" ).orElse( null ) )
         )
         .divBtm(2)
 

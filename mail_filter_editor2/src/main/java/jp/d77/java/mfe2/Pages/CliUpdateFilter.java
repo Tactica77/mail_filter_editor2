@@ -9,20 +9,22 @@ import java.util.Map;
 import java.util.Optional;
 
 import jp.d77.java.mfe2.BasicIO.Mfe2Config;
-import jp.d77.java.mfe2.BasicIO.ToolAny.arrayCounter;
 import jp.d77.java.mfe2.BasicIO.ToolNet;
 import jp.d77.java.mfe2.Datas.BlockDatas;
-import jp.d77.java.mfe2.Datas.BlockDatas.BlockData;
 import jp.d77.java.mfe2.Datas.IpTablesDatas;
 import jp.d77.java.mfe2.Datas.RDAPCache;
 import jp.d77.java.mfe2.Datas.RDAPCache.RdapResult;
 import jp.d77.java.tools.BasicIO.Debugger;
+import jp.d77.java.tools.BasicIO.ToolArrays.arrayCounter;
 import jp.d77.java.tools.BasicIO.ToolDate;
 import jp.d77.java.tools.BasicIO.ToolNums;
 import jp.d77.java.mfe2.Datas.SessionLogDatas;
 import jp.d77.java.mfe2.Datas.SessionLogManager;
+import jp.d77.java.mfe2.Datas.SpotBlockDatas;
+import jp.d77.java.mfe2.Datas.SpotBlockDatas.SpotBlockData;
 
 public class CliUpdateFilter {
+
     private class IpRank {
         private int             m_cnt;
         private float           m_score;
@@ -41,7 +43,7 @@ public class CliUpdateFilter {
         public void newCount(){ this.m_cnt += 1; }
         public void add( float c, Optional<LocalDateTime> d, String s ){
             this.m_score += c;
-            this.m_histry.add( ToolDate.Fromat(d.orElse(null), "MM-dd hh:mm").orElse("??:??") + " (" + ToolNums.Float2Str( c ) + ")" + s);
+            this.m_histry.add( ToolDate.Format(d.orElse(null), "MM-dd hh:mm").orElse("??:??") + " (" + ToolNums.Float2Str( c ) + ")" + s);
         }
         public void setCc( String cc ){
             if ( cc == null ) this.m_cc = "??";
@@ -68,7 +70,7 @@ public class CliUpdateFilter {
 
     private Mfe2Config      m_cfg;
     //private FilterDatas     m_filter;
-    private IpTablesDatas     m_filter;
+    private IpTablesDatas     m_iptdata;
     private SessionLogManager   m_slog;
     private Map<String, IpRank> m_rank;
     private arrayCounter    m_data_cnt_cidrs;  // CIDRカウンタ
@@ -94,40 +96,24 @@ public class CliUpdateFilter {
 
         // Load Filter
         this.ProcHistory( true, "Start");
-        //this.m_filter = new FilterDatas();
-        //this.m_filter.load( this.m_cfg.getDataFilePath() + "/country_filter.txt" );
-        //this.ProcHistory( false, "Load country_filter.txt");
 
+        this.m_iptdata = new IpTablesDatas();
+        // iptablesを読み込む ※一旦すべて削除ステータス
+        this.m_iptdata.loadIptables(  this.m_cfg.getDataFilePath() + "/iptables_dump.txt"  );
 
-        this.m_filter = new IpTablesDatas();
-        this.m_filter.loadIptables(  this.m_cfg.getDataFilePath() + "/iptables_dump.txt"  );
+        // country_filterを読み込む
+        this.m_iptdata.loadCountryFilter( this.m_cfg.getDataFilePath() + "/country_filter.txt" );
 
-        this.m_filter.loadCountryFilter( this.m_cfg.getDataFilePath() + "/country_filter.txt" );
-
-        // Load BlockData
-        BlockDatas bd = new BlockDatas( this.m_filter, "black list" );
+        // black listを読み込む
+        BlockDatas bd = new BlockDatas( this.m_iptdata, "black list" );
         bd.load( this.m_cfg.getDataFilePath() + "/block_list_black.txt" );
         this.ProcHistory( false, "Load block_list_black.txt"  );
     }
 
-    public void createSpotBlockData(){
-        // Load BlockData
-        BlockDatas bds = new BlockDatas( this.m_filter, "spot block" );
-
-        for( String ip: this.getIps( true ) ){
-            BlockData bd = new BlockData( true, ip, LocalDate.now(), this.getRank(ip).getCc(), this.getRank(ip).getOrg() );
-            bds.add( bd );
-        }
-        bds.save( this.m_cfg.getDataFilePath() + "/block_list_spot.txt" );
-        this.ProcHistory( false, "create block_list_spot.txt"  );
-
-        this.m_filter.saveBlockSetting( this.m_cfg.getDataFilePath() + "/iptables_deletes.txt",true );
-        this.ProcHistory( false, "create iptables_deletes.txt"  );
-
-        this.m_filter.saveBlockSetting( this.m_cfg.getDataFilePath() + "/iptables_adds.txt",false );
-        this.ProcHistory( false, "create iptables_adds.txt"  );
-    }
-
+    /**
+     * セッションログを読み込み、ipスコアを作成する
+     * @param days
+     */
     public void loadSessionLog( int days ) {
         Debugger.TracePrint();
         LocalDate targetDate = LocalDate.now();
@@ -136,7 +122,7 @@ public class CliUpdateFilter {
         // SessionLogを読み込み
         for (LocalDate d = startDate; !d.isAfter( targetDate ); d = d.plusDays(1)) {
             this.m_slog.load( d, null );
-            this.ProcHistory( false, "Load SessionLog: " + ToolDate.Fromat( d, "uuuu-MM-dd").orElse("???") );
+            this.ProcHistory( false, "Load SessionLog: " + ToolDate.Format( d, "uuuu-MM-dd").orElse("???") );
         }
 
         RDAPCache cache = new RDAPCache( this.m_cfg );
@@ -144,7 +130,7 @@ public class CliUpdateFilter {
         for ( LocalDate d: this.m_slog.getDatesReverce() ){
             cache.load( d );
             cache.server_get_flag( false );   // キャッシュのみから取得する(ネットから取得しない)
-            this.ProcHistory( false, "Load RDAP cache: " + ToolDate.Fromat( d, "uuuu-MM-dd").orElse("???")  );
+            this.ProcHistory( false, "Load RDAP cache: " + ToolDate.Format( d, "uuuu-MM-dd").orElse("???")  );
 
             SessionLogDatas sd = this.m_slog.getData( d ).orElse(null);
             for( int id: sd.getIdLists() ){
@@ -197,7 +183,7 @@ public class CliUpdateFilter {
                     this.m_data_cnt_org.add( rdap.get().org() );
                 }
             }
-            this.ProcHistory( false, "Analyse Session Log: " + ToolDate.Fromat( d, "uuuu-MM-dd").orElse("???")  );
+            this.ProcHistory( false, "Analyse Session Log: " + ToolDate.Format( d, "uuuu-MM-dd").orElse("???")  );
             waight /= 1.25;
         }
 
@@ -217,6 +203,36 @@ public class CliUpdateFilter {
             }
         }
         this.ProcHistory( false, "IP Summary" );
+    }
+
+    /**
+     * スポットブロックデータと、IPTables差分データを出力する
+     */
+    public void createSpotBlockData(){
+        // スポットブロックデータ作成
+        SpotBlockDatas bds = new SpotBlockDatas( this.m_iptdata, "spot block" );
+        for( String ip: this.getIps( true ) ){
+            SpotBlockData bd = new SpotBlockData(
+                 true
+                 , ip
+                 , LocalDate.now()
+                 , this.getRank(ip).getCc()
+                 , this.getRank(ip).getOrg()
+                 , this.getRank(ip).getCount()
+                 , this.getRank(ip).getScore()
+            );
+            bds.add( bd );
+        }
+        bds.save( this.m_cfg.getDataFilePath() + "/block_list_spot.txt" );
+        this.ProcHistory( false, "create block_list_spot.txt"  );
+
+        // iptables Deleteファイルを作成
+        this.m_iptdata.saveBlockSetting( this.m_cfg.getDataFilePath() + "/iptables_deletes.txt",true );
+        this.ProcHistory( false, "create iptables_deletes.txt"  );
+
+        // iptables Addファイルを作成
+        this.m_iptdata.saveBlockSetting( this.m_cfg.getDataFilePath() + "/iptables_adds.txt",false );
+        this.ProcHistory( false, "create iptables_adds.txt"  );
     }
 
     /**

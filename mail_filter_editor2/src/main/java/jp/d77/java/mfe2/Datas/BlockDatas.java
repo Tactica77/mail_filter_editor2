@@ -43,8 +43,8 @@ public class BlockDatas {
         "(?:\\s+(.*))?$"                              // ORG
     );
     private final List<BlockData> m_block_datas = new ArrayList<>();
-    private FilterDatas m_filter = null;
-    private String m_blocktype;
+    protected FilterDatas m_filter = null;
+    protected String m_blocktype;
 
     public BlockDatas ( FilterDatas filter, String blocktype ){
         this.m_filter = filter;
@@ -98,7 +98,7 @@ public class BlockDatas {
         return ret.toArray( new String[0] );
     }
 
-    private void setParentIp(){
+    protected void setParentIp(){
         if ( this.m_filter == null ) return;
         for( BlockData bd: this.m_block_datas ){
             IpFilter ipf = this.m_filter.getFilter( bd.ip ).orElse(null);
@@ -144,7 +144,7 @@ public class BlockDatas {
 
             if (!ToolNet.isIP(ip)) continue;
 
-            LocalDate date = ToolDate.YMD2LocalDate(dateStr).orElse(null);
+            LocalDate date = ToolDate.Str2LocalDate(dateStr).orElse(null);
             if ( date == null ) continue;
 
             if (cc == null || cc.isBlank()) cc = "??";
@@ -174,7 +174,7 @@ public class BlockDatas {
 
             sb.append(r.ip)
               .append("\t# ")
-              .append( ToolDate.Fromat( r.date, "uuuuMMdd" ).orElse("yyyyMMdd" ) )
+              .append( ToolDate.Format( r.date, "uuuuMMdd" ).orElse("yyyyMMdd" ) )
               .append(" ")
               .append(r.cc);
 
@@ -185,6 +185,10 @@ public class BlockDatas {
             output.add(sb.toString());
         }
 
+        return this.saveList(filename, output);
+    }
+
+    protected Optional<String> saveList(String filename, List<String> output ) {
         try {
             Path tmpPath = Path.of(filename + ".tmp");
             Path filePath = Path.of(filename);

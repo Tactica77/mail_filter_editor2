@@ -7,13 +7,16 @@ import jp.d77.java.mfe2.BasicIO.Mfe2Config;
 import jp.d77.java.mfe2.BasicIO.ToolAny;
 import jp.d77.java.mfe2.Datas.BlockDatas;
 import jp.d77.java.mfe2.Datas.FilterDatas;
+import jp.d77.java.mfe2.Datas.SpotBlockDatas;
 import jp.d77.java.mfe2.Datas.BlockDatas.BlockData;
 import jp.d77.java.tools.BasicIO.ToolDate;
+import jp.d77.java.tools.BasicIO.ToolNums;
 import jp.d77.java.tools.HtmlIO.BSOpts;
 import jp.d77.java.tools.HtmlIO.BSSForm;
 
 public class WebBlockEditor extends AbstractMfe{
-    private BlockDatas  m_bd;
+    private BlockDatas      m_bd;
+    private SpotBlockDatas  m_sbd;
     public record  BlockFormData( String ymd, String Cc, String Cidr, String org ){}
     private BlockFormData m_block_form_data = null;
 
@@ -26,22 +29,35 @@ public class WebBlockEditor extends AbstractMfe{
     @Override
     public void init() {
         super.init();
-        this.m_block_form_data = new BlockFormData(
-            this.getConfig().get( "edit_ymd" ).orElse( ToolDate.Fromat( LocalDate.now(), "uuuuMMdd" ).orElse("") )
-            ,this.getConfig().get( "edit_cc" ).orElse("")
-            ,this.getConfig().get( "edit_cidr" ).orElse("")
-            ,this.getConfig().get( "edit_org" ).orElse("")
-        );
+        if ( this.getConfig().get("mode").orElse("").equals("spot") ){
+
+        }else{
+            this.m_block_form_data = new BlockFormData(
+                this.getConfig().get( "edit_ymd" ).orElse( ToolDate.Format( LocalDate.now(), "uuuuMMdd" ).orElse("") )
+                ,this.getConfig().get( "edit_cc" ).orElse("")
+                ,this.getConfig().get( "edit_cidr" ).orElse("")
+                ,this.getConfig().get( "edit_org" ).orElse("")
+            );
+        }
     }
 
     // 2:load
     @Override
     public void load() {
         super.load();
-        FilterDatas fd = new FilterDatas();
+        FilterDatas fd;
+
+        fd = new FilterDatas();
         fd.loadCountryFilter( this.getConfig().getDataFilePath() + "/country_filter.txt" );
-        this.m_bd = new BlockDatas( fd, "black list" );
-        this.m_bd.load( this.getConfig().getDataFilePath() + "/block_list_black.txt" );
+        if ( this.getConfig().get("mode").orElse("").equals("spot") ){
+            this.m_sbd = new SpotBlockDatas( fd, "spot block" );
+            this.m_sbd.load( this.getConfig().getDataFilePath() + "/block_list_spot.txt" );
+
+        }else{
+            this.m_bd = new BlockDatas( fd, "black list" );
+            this.m_bd.load( this.getConfig().getDataFilePath() + "/block_list_black.txt" );
+
+        }
     }
 
     // 3:post_save_reload
@@ -50,6 +66,10 @@ public class WebBlockEditor extends AbstractMfe{
         super.post_save_reload();
         boolean change = false;
 
+        // スポットは処理しない
+        if ( this.getConfig().get("mode").orElse("").equals("spot") ) return;
+
+        // ENABLE
         if ( this.getConfig().get( "submit_block_enable" ).isPresent() ){
             // enableへ
             this.getConfig().addAlertInfo( "to ENABLE start");
@@ -66,6 +86,8 @@ public class WebBlockEditor extends AbstractMfe{
             }
             this.getConfig().addAlertInfo( "to ENABLE done");
         }
+
+        // DISABLE
         if ( this.getConfig().get( "submit_block_disable" ).isPresent() ){
             // disableへ
             this.getConfig().addAlertInfo( "to DISABLE start");
@@ -83,6 +105,8 @@ public class WebBlockEditor extends AbstractMfe{
             }
             this.getConfig().addAlertInfo( "to DISABLE done");
         }
+
+        // DELETE
         if ( this.getConfig().get( "submit_block_delete" ).isPresent() ){
             this.getConfig().addAlertInfo( "to DELETE start");
             for (String cidr: this.getConfig().gets( "edit_select_cidr" ) ){
@@ -95,6 +119,8 @@ public class WebBlockEditor extends AbstractMfe{
             }
             this.getConfig().addAlertInfo( "to DELETE done");
         }
+
+        // ADD
         if ( this.getConfig().get( "submit_block_add" ).isPresent() ){
             String ymd = this.getConfig().get( "edit_ymd" ).orElse( null );
             String cc = this.getConfig().get( "edit_cc" ).orElse( "??" );
@@ -106,7 +132,7 @@ public class WebBlockEditor extends AbstractMfe{
                 BlockData rec = new BlockData(
                     true
                     , cidr
-                    , ToolDate.YMD2LocalDate( ymd ).orElse( LocalDate.now() )
+                    , ToolDate.Str2LocalDate( ymd ).orElse( LocalDate.now() )
                     , cc
                     , org
                 );
@@ -118,6 +144,8 @@ public class WebBlockEditor extends AbstractMfe{
                 }
             }
         }
+
+        // 変更したら保存
         if ( change ){
             Optional<String> res = this.m_bd.save( this.getConfig().getDataFilePath() + "/block_list_black.txt" );
             if ( res.isEmpty() ){
@@ -174,7 +202,6 @@ public class WebBlockEditor extends AbstractMfe{
     }
 
     private String displayEditor(){
-        String res = "";
         BSSForm f = BSSForm.newForm();
 
         f.tableTop(
@@ -183,112 +210,150 @@ public class WebBlockEditor extends AbstractMfe{
                 .fclass("table table-bordered table-striped")
                 .border("1")
         );
-
         // Table Header
-        f.tableHeadTop()
-            .tableRowTop()
-            .tableTh( "CMD" )
-            .tableTh( "YMD" )
-            .tableTh( "CC" )
-            .tableTh( "CIDR" )
-            .tableTh( "Organization" )
-            .tableTh( "Parent" )
-            .tableRowBtm()
-            .tableHeadBtm();
+        f.tableHeadTop();
+        f.tableRowTop();
+        if ( ! this.getConfig().get("mode").orElse("").equals("spot") ) f.tableTh( "CMD" );
+        f.tableTh( "YMD" );
+        f.tableTh( "CC" );
+        f.tableTh( "CIDR" );
+        f.tableTh( "Organization" );
+        if ( this.getConfig().get("mode").orElse("").equals("spot") ){
+            f.tableTh( "cnt" );
+            f.tableTh( "score" );
+        }
+        f.tableTh( "Parent" );
+        f.tableRowBtm();
+        f.tableHeadBtm();
 
         f.tableBodyTop();
-        for ( String r: this.m_bd.getCidrs() ){
-            if ( this.m_bd.getRecord(r).isEmpty() ) continue;
-            String ymd = ToolDate.Fromat( this.m_bd.getRecord(r).get().date, "uuuuMMdd" ).orElse("?");
+        String[] cidrs;
+        if ( this.getConfig().get("mode").orElse("").equals("spot") ) {
+            cidrs = this.m_sbd.getCidrs();
+        }else{
+            cidrs = this.m_bd.getCidrs();
+        }
+
+        for ( String cidr: cidrs ){
+            String ymd,cc,org,parent_ip;
             String add_opt = "";
-            if ( ! this.m_bd.getRecord(r).get().enabled ){
+
+            if ( this.getConfig().get("mode").orElse("").equals("spot") ) {
+                // Spot
+                if ( this.m_sbd.getSRecord(cidr).isEmpty() ) continue;
+                ymd = ToolDate.Format( this.m_sbd.getSRecord(cidr).get().date, "uuuuMMdd" ).orElse("?");
+                cc = this.m_sbd.getSRecord(cidr).get().cc;
+                org = this.m_sbd.getSRecord(cidr).get().org;
+                parent_ip = this.m_sbd.getSRecord(cidr).get().parent_ip;
+            }else{
+                if ( this.m_bd.getRecord(cidr).isEmpty() ) continue;
                 // disable行
-                add_opt = "style=\"background-color: #cccccc;\"";
+                if ( ! this.m_bd.getRecord(cidr).get().enabled ) add_opt = "style=\"background-color: #cccccc;\"";
+                ymd = ToolDate.Format( this.m_bd.getRecord(cidr).get().date, "uuuuMMdd" ).orElse("?");
+                cc = this.m_bd.getRecord(cidr).get().cc;
+                org = this.m_bd.getRecord(cidr).get().org;
+                parent_ip = this.m_bd.getRecord(cidr).get().parent_ip;
             }
+
 
             // 描画
             f.tableRowTop();
-            f.tableTdHtml( 
-                BSSForm.newForm().formInput(
-                    BSOpts
-                        .init( "type", "checkbox")
-                        .set("name", "edit_select_cidr" )
-                        .set("value", this.m_bd.getRecord(r).get().ip )
-                ).toString()
-                , add_opt );
+            if ( ! this.getConfig().get("mode").orElse("").equals("spot") ) {
+                f.tableTdHtml( 
+                    BSSForm.newForm().formInput(
+                        BSOpts
+                            .init( "type", "checkbox")
+                            .set("name", "edit_select_cidr" )
+                            .set("value", this.m_bd.getRecord(cidr).get().ip )
+                    ).toString()
+                    , add_opt );
+            }
             f.tableTd( ymd, add_opt );
-            f.tableTd( this.m_bd.getRecord(r).get().cc, add_opt );
+            f.tableTd( cc, add_opt );
             f.tableTdHtml(
-                    this.m_bd.getRecord(r).get().ip
+                    cidr
                     + ToolAny.IPLink(
-                        new BlockFormData(
-                            ymd
-                            ,this.m_bd.getRecord(r).get().cc
-                            ,this.m_bd.getRecord(r).get().ip
-                            ,this.m_bd.getRecord(r).get().org
-                        )
+                        new BlockFormData( ymd, cc, cidr, org )
                     )
                     , add_opt
                 );
-            f.tableTd( this.m_bd.getRecord(r).get().org, add_opt );
-            f.tableTdHtml( this.m_bd.getRecord(r).get().parent_ip.replace("\n", "<BR>") , add_opt );
-            //f.tableTd( parentIP, add_opt );
+            if ( org.length() > 20 ){
+                f.tableTd( org.substring(0, 19) + "...", add_opt );
+            }else{
+                f.tableTd( org, add_opt );
+            }
+            if ( this.getConfig().get("mode").orElse("").equals("spot") ){
+                f.tableTd( this.m_sbd.getSRecord(cidr).get().m_cnt + "", add_opt );
+                f.tableTd( ToolNums.Float2Str( this.m_sbd.getSRecord(cidr).get().m_score, 2 ) , add_opt );
+            }
+            f.tableTdHtml( parent_ip.replace("\n", "<BR>") , add_opt );
             f.tableRowBtm();
         }
         f.tableBodyBtm();
         f.tableBtm();
-        
-        res += BSSForm.newForm().formTop( this.getUri(), false);
+        if ( this.getConfig().get("mode").orElse("").equals("spot") ) {
+            return f.toString();
+
+        }else{
+            f.formBtm();
+            return this.BlockEditForm() + f.toString();
+        }
+    }
+
+    private String BlockEditForm(){
+        BSSForm f = BSSForm.newForm();
+
+        f.formTop( this.getUri(), false);
 
         // command buttons
-        res += BSSForm.newForm().divRowTop();
-        res += BSSForm.newForm().divTop(12);
-        res += BSSForm.newForm().formSubmit(
+        f.divRowTop();
+        f.divTop(12);
+        f.formSubmit(
             BSOpts.init()
                 .label( "ENABLE" )
                 .name( "submit_block_enable" )
                 .value( "ENABLE" )
         );
-        res += BSSForm.newForm().formSubmit(
+        f.formSubmit(
             BSOpts.init()
                 .label( "DISABLE" )
                 .name( "submit_block_disable" )
                 .value( "DISABLE" )
         );
-        res += BSSForm.newForm().formSubmit(
+        f.formSubmit(
             BSOpts.init()
                 .label( "DELETE" )
                 .name( "submit_block_delete" )
                 .value( "DELETE" )
         );
-        res += BSSForm.newForm().divBtm(12);
-        res += BSSForm.newForm().divRowBtm();
+        f.divBtm(12);
+        f.divRowBtm();
 
         // Labels
-        res += BSSForm.newForm().divRowTop();
-        res += BSSForm.newForm().divTop(2).formLabel( BSOpts.init().label( "YYYYMMDD" ) ).divBtm(2);
-        res += BSSForm.newForm().divTop(2).formLabel( BSOpts.init().label( "CC" ) ).divBtm(2);
-        res += BSSForm.newForm().divTop(2).formLabel(  BSOpts.init().label( "CIDR" ) ).divBtm(2);
-        res += BSSForm.newForm().divTop(2).formLabel(  BSOpts.init().label( "Organization" ) ).divBtm(2);
-        res += BSSForm.newForm().divTop(2).divBtm(2);
-        res += BSSForm.newForm().divTop(2).divBtm(2);
-        res += BSSForm.newForm().divRowBtm();
+        f.divRowTop();
+        f.divTop(2).formLabel( BSOpts.init().label( "YYYYMMDD" ) ).divBtm(2);
+        f.divTop(2).formLabel( BSOpts.init().label( "CC" ) ).divBtm(2);
+        f.divTop(2).formLabel(  BSOpts.init().label( "CIDR" ) ).divBtm(2);
+        f.divTop(2).formLabel(  BSOpts.init().label( "Organization" ) ).divBtm(2);
+        f.divTop(2).divBtm(2);
+        f.divTop(2).divBtm(2);
+        f.divRowBtm();
 
         // Forms
-        res += BSSForm.newForm().divRowTop();
-        res += BSSForm.newForm().divTop(2)
+        f.divRowTop();
+        f.divTop(2)
             .formInput( BSOpts.init().name( "edit_ymd" ).value( this.m_block_form_data.ymd ) )
             .divBtm(2);
-        res += BSSForm.newForm().divTop(2)
+        f.divTop(2)
             .formInput( BSOpts.init().name( "edit_cc" ).value( this.m_block_form_data.Cc ) )
             .divBtm(2);
-        res += BSSForm.newForm().divTop(2)
+        f.divTop(2)
             .formInput( BSOpts.init().name( "edit_cidr" ).value( this.m_block_form_data.Cidr ) )
             .divBtm(2);
-        res += BSSForm.newForm().divTop(2)
+        f.divTop(2)
             .formInput( BSOpts.init().name( "edit_org" ).value( this.m_block_form_data.org ) )
             .divBtm(2);
-        res += BSSForm.newForm().divTop(2)
+        f.divTop(2)
             .formSubmit(
                 BSOpts.init()
                     .label( "ADD" )
@@ -296,12 +361,9 @@ public class WebBlockEditor extends AbstractMfe{
                     .value( "ADD" )
             )
             .divBtm(2);
-        res += BSSForm.newForm().divTop(2).divBtm(2);
-        res += BSSForm.newForm().divRowBtm();
+        f.divTop(2).divBtm(2);
+        f.divRowBtm();
 
-        res += f.toString();
-        res += BSSForm.newForm().formBtm();
-
-        return res;
+        return f.toString();
     }
 }
