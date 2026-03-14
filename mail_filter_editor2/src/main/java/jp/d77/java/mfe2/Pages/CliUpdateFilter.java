@@ -85,6 +85,7 @@ public class CliUpdateFilter {
         }
         this.m_proc_histry_start = Debugger.elapsedTimer();
     }
+    
     public CliUpdateFilter( Mfe2Config cfg ){
         Debugger.TracePrint();
         this.m_cfg = cfg;

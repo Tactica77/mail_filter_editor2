@@ -21,6 +21,7 @@ import jp.d77.java.mfe2.Datas.SessionLogDatas.LogBasicData;
 import jp.d77.java.mfe2.Datas.SessionLogManager;
 import jp.d77.java.mfe2.Datas.SpotBlockDatas;
 import jp.d77.java.mfe2.Pages.WebBlockEditor.BlockFormData;
+import jp.d77.java.tools.BasicIO.Debugger;
 import jp.d77.java.tools.BasicIO.ToolArrays.arrayCounter;
 import jp.d77.java.tools.BasicIO.ToolArrays.arrayString;
 import jp.d77.java.tools.BasicIO.ToolDate;
@@ -71,12 +72,15 @@ public class WebLogsList {
 
         this.m_filter = new FilterDatas();
         this.m_filter.loadCountryFilter( this.m_cfg.getDataFilePath() + "/country_filter.txt" );
+        Debugger.addHistory("loaded country_filter");
 
         BlockDatas bd = new BlockDatas( this.m_filter, "black list" );
         bd.load( this.m_cfg.getDataFilePath() + "/block_list_black.txt" );
+        Debugger.addHistory("loaded block_list_black");
 
         SpotBlockDatas sbd = new SpotBlockDatas( this.m_filter, "spot block" );
         sbd.load( this.m_cfg.getDataFilePath() + "/block_list_spot.txt" );
+        Debugger.addHistory("loaded block_list_spot");
     }
 
     public String display(){
@@ -211,6 +215,7 @@ public class WebLogsList {
             );
             this.list_datas.add(display_data);
         }
+        Debugger.addHistory("done");
     }
 
     private String CreateDisplay(){
@@ -318,6 +323,7 @@ public class WebLogsList {
         f.tableBodyBtm();
         f.tableBtm();
 
+        Debugger.addHistory("done");
         return f.toString();
     }
 
@@ -378,6 +384,7 @@ public class WebLogsList {
 
         f.tableBodyBtm();
         f.tableBtm();
+        Debugger.addHistory("done");
         if ( i <= 0 ) return "";
         return f.toString();
     }

@@ -5,6 +5,7 @@ import java.time.LocalDate;
 import jp.d77.java.mfe2.Datas.SessionLogManager;
 import jp.d77.java.mfe2.BasicIO.HtmlGraph;
 import jp.d77.java.mfe2.BasicIO.Mfe2Config;
+import jp.d77.java.tools.BasicIO.Debugger;
 import jp.d77.java.tools.BasicIO.ToolDate;
 import jp.d77.java.tools.HtmlIO.BSOpts;
 import jp.d77.java.tools.HtmlIO.BSSForm;
@@ -31,9 +32,7 @@ public class WebLogs extends AbstractMfe{
             // targetDateの読み込み
             this.m_targetDate = ToolDate.Str2LocalDate( this.getConfig().get( "edit_cal" ).get() ).orElse( null );
         }
-        if ( this.m_targetDate == null ){
-            this.m_targetDate = LocalDate.now();
-        }
+        if ( this.m_targetDate == null ) this.m_targetDate = LocalDate.now();
 
         // 表示範囲日
         if ( this.getConfig().get( "edit_days" ).isPresent() ) {
@@ -54,13 +53,14 @@ public class WebLogs extends AbstractMfe{
                 this.m_select_id = -1;
             }
         }
+        Debugger.addHistory("init");
     }
 
     // 2:load
     @Override
     public void load() {
         super.load();
-        if ( this.m_targetDate == null ) return;
+        if ( this.m_targetDate == null ) this.m_targetDate = LocalDate.now();
         // 1-7日内
         if ( this.m_edit_days < 1 || this.m_edit_days > 7 ) this.m_edit_days = 3;
 
@@ -76,6 +76,7 @@ public class WebLogs extends AbstractMfe{
                 this.m_slog.load( d, null );
             }
         }
+        Debugger.addHistory("load");
     }
 
     // 3:post_save_reload
@@ -141,11 +142,14 @@ public class WebLogs extends AbstractMfe{
             this.getHtml().addString( list.displayGraph( this.m_edit_days ) );
             this.getHtml().addString( res );
         }
+        Debugger.addHistory("displayBody");
     }
 
     // 9:displayBottomInfo
     @Override
     public void displayBottomInfo(){
+        this.getConfig().addAlertBottomInfo( Debugger.getHistory() );
+        Debugger.InfoPrint(  String.join("\n", Debugger.getHistory() ) );
         super.displayBottomInfo();
     }
 

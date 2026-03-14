@@ -56,7 +56,7 @@ public class FilterDatas {
         // 登録済みに含まれるか確認
         for ( IpFilter chk_ipf: this.m_ipfilter ){
             if ( this.isWithin( chk_ipf, ipf ) ) {
-                Debugger.WarnPrint( "not add " + ipf.getCidr() + " Included " + chk_ipf.getCidr() );
+                //Debugger.WarnPrint( "not add " + ipf.getCidr() + " Included " + chk_ipf.getCidr() );
                 return false;
             }
             if ( this.isWithin( ipf, chk_ipf ) ) {
@@ -66,7 +66,7 @@ public class FilterDatas {
         }
 
         for ( IpFilter chk_ipf: removes ){
-            Debugger.WarnPrint( "remove " + chk_ipf.getCidr() + " Included " + ipf.getCidr() );
+            //Debugger.WarnPrint( "remove " + chk_ipf.getCidr() + " Included " + ipf.getCidr() );
             this.m_ipfilter.remove( chk_ipf );
         }
 

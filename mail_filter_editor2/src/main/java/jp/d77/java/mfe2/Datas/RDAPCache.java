@@ -124,21 +124,21 @@ public class RDAPCache extends StorableConfig{
         for ( String ip: this.m_rdap_summary_chached.keys() ){
             out.add( ip + "=" + this.m_rdap_summary_chached.get( ip ) );
         }
-        this.m_cfg.addAlertBottomInfo( "cached..." + String.join( " / ", out ) );
+        //this.m_cfg.addAlertBottomInfo( "cached..." + String.join( " / ", out ) );
         this.m_rdap_summary_chached.clear();
 
         out.clear();
         for ( String ip: this.m_rdap_summary_get.keys() ){
             out.add( ip + "=" + this.m_rdap_summary_get.get( ip ) );
         }
-        this.m_cfg.addAlertBottomInfo( "rdap get..." + String.join( " / ", out ) );
+        //this.m_cfg.addAlertBottomInfo( "rdap get..." + String.join( " / ", out ) );
         this.m_rdap_summary_get.clear();
 
         out.clear();
         for ( String ip: this.m_rdap_summary_skip.keys() ){
             out.add( ip + "=" + this.m_rdap_summary_skip.get( ip ) );
         }
-        this.m_cfg.addAlertBottomInfo( "skip..." + String.join( " / ", out ) );
+        //this.m_cfg.addAlertBottomInfo( "skip..." + String.join( " / ", out ) );
         this.m_rdap_summary_skip.clear();
     }
 }
