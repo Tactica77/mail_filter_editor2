@@ -74,7 +74,14 @@ public abstract class AbstractMfe extends AbstractWebPage implements InterfaceWe
             )
         );
         this.getHtml().addString( BSS.getNavbarLinkItem( BSOpts.init().title("RDAP").href("/rdap") ) );
-        this.getHtml().addString( BSS.getNavbarLinkItem( BSOpts.init().title("RSPAMD").href("https://rspamd.d77.jp/").target("_blank") ) );
+
+        this.getHtml().addString(
+            BSS.NavbarDropDown(
+                "TOOLS"
+                , BSS.getNavbarLinkItem( BSOpts.init().title("RSPAMD").href("https://rspamd.d77.jp/").target("_blank") )
+                , BSS.getNavbarLinkItem( BSOpts.init().title("DMARC Report").href("https://dmarcrep.d77.jp/").target("_blank") )
+            )
+        );
 
         this.getHtml().addString(
             BSS.NavbarDropDown(
