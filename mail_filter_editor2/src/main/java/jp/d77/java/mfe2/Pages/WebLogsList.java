@@ -71,7 +71,7 @@ public class WebLogsList {
         this.m_slog = slog;
 
         this.m_filter = new FilterDatas();
-        this.m_filter.loadCountryFilter( this.m_cfg.getDataFilePath() + "/country_filter.txt" );
+        this.m_filter.loadCountryFilter( this.m_cfg.getDataFilePath() + "/country_filter.txt", true );
         Debugger.addHistory("loaded country_filter");
 
         BlockDatas bd = new BlockDatas( this.m_filter, "black list" );

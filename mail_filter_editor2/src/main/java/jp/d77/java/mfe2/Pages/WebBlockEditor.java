@@ -48,7 +48,7 @@ public class WebBlockEditor extends AbstractMfe{
         FilterDatas fd;
 
         fd = new FilterDatas();
-        fd.loadCountryFilter( this.getConfig().getDataFilePath() + "/country_filter.txt" );
+        fd.loadCountryFilter( this.getConfig().getDataFilePath() + "/country_filter.txt", true );
         if ( this.getConfig().get("mode").orElse("").equals("spot") ){
             this.m_sbd = new SpotBlockDatas( fd, "spot block" );
             this.m_sbd.load( this.getConfig().getDataFilePath() + "/block_list_spot.txt" );

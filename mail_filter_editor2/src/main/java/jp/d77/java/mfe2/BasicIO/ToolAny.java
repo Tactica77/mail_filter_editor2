@@ -4,12 +4,16 @@ import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Optional;
 
+import jp.d77.java.mfe2.Datas.FilterDatas.IpFilter;
 import jp.d77.java.mfe2.Pages.WebBlockEditor.BlockFormData;
 import jp.d77.java.tools.HtmlIO.HtmlString;
 
 public class ToolAny {
+    public static List<IpFilter>  country_filter_cache = new ArrayList<>();
+    public static String country_filter_lines_date = "";
 
     /**
      * 文字列をHTMLエスケープしながら結合する

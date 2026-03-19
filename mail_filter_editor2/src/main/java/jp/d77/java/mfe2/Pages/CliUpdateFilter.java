@@ -103,7 +103,7 @@ public class CliUpdateFilter {
         this.m_iptdata.loadIptables(  this.m_cfg.getDataFilePath() + "/iptables_dump.txt"  );
 
         // country_filterを読み込む
-        this.m_iptdata.loadCountryFilter( this.m_cfg.getDataFilePath() + "/country_filter.txt" );
+        this.m_iptdata.loadCountryFilter( this.m_cfg.getDataFilePath() + "/country_filter.txt", false );
 
         // black listを読み込む
         BlockDatas bd = new BlockDatas( this.m_iptdata, "black list" );
