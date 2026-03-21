@@ -482,6 +482,8 @@ public class SessionLogDatas {
             ! this.containsValue( id, "relay_status", "send null")
             && ! this.containsValue( id, "relay_status", "send local")
             && ! this.containsValue( id, "relay_status", "send remote")
+            && ! this.containsValue( id, "relay_status", "受信")
+            && ! this.containsValue( id, "relay_status", "送信")
             ){
             // send云々が無ければエラー(それ以外のメッセージはワーニング扱い)
             return true;

@@ -18,6 +18,7 @@ import jp.d77.java.mfe2.Datas.RDAPCache;
 import jp.d77.java.mfe2.Datas.RDAPCache.RdapResult;
 import jp.d77.java.mfe2.Datas.SessionLogDatas;
 import jp.d77.java.mfe2.Datas.SessionLogDatas.LogBasicData;
+import jp.d77.java.mfe2.LogAnalyser.RspamdLog.RspamdLogData;
 import jp.d77.java.mfe2.Datas.SessionLogManager;
 import jp.d77.java.mfe2.Datas.SpotBlockDatas;
 import jp.d77.java.mfe2.Pages.WebBlockEditor.BlockFormData;
@@ -44,6 +45,7 @@ public class WebLogsList {
         , boolean result_error
         , String from_to
         , String filter
+        , String SpamScore
     ){}
     
     // IPカウンタ
@@ -80,7 +82,7 @@ public class WebLogsList {
 
         SpotBlockDatas sbd = new SpotBlockDatas( this.m_filter, "spot block" );
         sbd.load( this.m_cfg.getDataFilePath() + "/block_list_spot.txt" );
-        Debugger.addHistory("loaded block_list_spot");
+        Debugger.addHistory("loaded block_list_spot");        
     }
 
     public String display(){
@@ -128,6 +130,11 @@ public class WebLogsList {
         cache.load( date );
         cache.server_get_flag( false );   // キャッシュのみから取得する(ネットから取得しない)
 
+        //RspamdLog rspam = new RspamdLog( this.m_cfg );
+        //rspam.Load(date);
+        //this.m_rspamdLog.put( date, rspam );
+
+
         for( int id: sd.getIdLists() ){
             if ( id == -999 ) continue;
             logsum_list_table_data display_data;
@@ -135,6 +142,7 @@ public class WebLogsList {
             data_work.clear();
             boolean result_error = false;
             String filter = null;
+            String spam_score = null;
             result_error = sd.isError(id);
             data_work.add( "result", ToolAny.joinDisp( sd.getResult(id) ).orElse( "???" ) );
 
@@ -171,6 +179,17 @@ public class WebLogsList {
                 }
             }
             if ( filter == null ) filter = "";
+            String qid = "",mid = "",w[];
+            w = sd.getPropS( id, "msgid" );
+            if ( w.length > 0 ) mid = w[0];
+            w = sd.getPropS( id, "postfix_queue" );
+            if ( w.length > 0 ) qid = w[0];
+            RspamdLogData rld = this.m_slog.getRspamData(date,qid, mid ).orElse(null);
+            if ( rld == null ){
+                spam_score = "";
+            }else{
+                spam_score = rld.getScoreResult();
+            }
 
             display_data = new logsum_list_table_data(
                 // id_link
@@ -212,6 +231,9 @@ public class WebLogsList {
 
                 // filter
                 , filter
+
+                // SpamScore
+                , spam_score
             );
             this.list_datas.add(display_data);
         }
@@ -234,8 +256,8 @@ public class WebLogsList {
             .tableRowTop()
             .tableTh( "ID" )
             .tableTh( "Time(Sec)" )
-            .tableTh( "Result" )
             .tableTh( "Logs" )
+            .tableTh( "Result" )
             .tableTh( "I" )
             .tableTh( "R" )
             .tableTh( "O" )
@@ -243,6 +265,7 @@ public class WebLogsList {
             .tableTh( "CIDR" )
             .tableTh( "CC" )
             .tableTh( "Org" )
+            .tableTh( "SPAM Score" )
             .tableTh( "Filter" )
             .tableTh( "From/To" )
             .tableRowBtm()
@@ -268,15 +291,15 @@ public class WebLogsList {
             // Time
             f.tableTdHtml( display_data.time, add_opt );
 
+            // Logs
+            f.tableTd( display_data.logs + "", add_opt );
+
             // Reesult
             if ( display_data.result_error ){
                 f.tableTdHtml( display_data.result, add_opt + " style=\"color: #FF0000;\"" );
             }else {
                 f.tableTdHtml( display_data.result, add_opt );
             }
-
-            // Logs
-            f.tableTd( display_data.logs + "", add_opt );
 
             // I
             f.tableTd( this.m_data_cnt_ip.get( ip ) + "", add_opt );
@@ -311,6 +334,9 @@ public class WebLogsList {
 
             // Org
             f.tableTdHtml( ToolAny.joinDisp( display_data.org.toArray( new String[0] ) ).orElse("?"), add_opt );
+
+            // SPAM Score
+            f.tableTdHtml( display_data.SpamScore, add_opt );
 
             // Filter
             f.tableTdHtml( display_data.filter, add_opt );

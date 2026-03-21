@@ -6,7 +6,7 @@
 
   <groupId>jp.d77.java</groupId>
   <artifactId>mfe2</artifactId>
-  <version>1.1.4</version>
+  <version>1.1.5</version>
 
   <name>mfe2</name>
   <!-- FIXME change it to the project's website -->
@@ -14,7 +14,7 @@
 
   <properties>
 		<java.version>20</java.version>
-		<release.date>2026-03-19</release.date>
+		<release.date>2026-03-21</release.date>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <maven.compiler.source>1.7</maven.compiler.source>
     <maven.compiler.target>1.7</maven.compiler.target>
@@ -23,7 +23,7 @@
 	<parent>
 		<groupId>org.springframework.boot</groupId>
 		<artifactId>spring-boot-starter-parent</artifactId>
-		<version>3.5.11</version>
+		<version>3.5.12</version>
 		<relativePath/> <!-- lookup parent from repository -->
 	</parent>
 

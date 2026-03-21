@@ -102,12 +102,14 @@ public class SessionLogAnalyse {
         s = LogPatterns.matcher( LogPatterns.PTN_ADDRESS_TO, lb.message(), 1 );
         if ( s.isPresent() ) this.m_slog.addProp( lb.logTime(), id, "to", s.get() );
 
+        // 接続ログ
         if ( lb.message().startsWith( "connect from " ) ){
             // Feb  4 11:37:07 afef27cd6bf6 postfix/smtpd[14562]: connect from fgmailer.com[35.187.195.50]
             // 処理なし
             return true;
         }
 
+        // 切断ログ
         if ( lb.message().startsWith( "disconnect from " ) ){
             // disconnect from unknown[192.168.1.210] helo=1 mail=1 rcpt=1 data=1 quit=1 commands=5
             String[] tokens = lb.message().split("\\s+");
@@ -126,33 +128,47 @@ public class SessionLogAnalyse {
             }
             if ( lb.message().contains("does not resolve to address") ){
                 //this.m_slog.addProp( lb.logTime(), id, "relay_status", "not resolve" );
-                this.m_slog.addProp( lb.logTime(), id, "error", "DNS not resolve" );
+                this.m_slog.addProp( lb.logTime(), id, "error", "(警告)正/逆引き不整合" );
             }
         }
 
         if ( lb.message().startsWith( "NOQUEUE: reject: " ) ){
             // NOQUEUE: reject: RCPT from unknown[181.229.197.169]: 450 4.7.25 Client host rejected: cannot find your hostname, [181.229.197.169]; from=<admin@d77.jp> to=<admin@d77.jp> proto=ESMTP helo=<smtpclient.apple>
-            s = LogPatterns.matcher( LogPatterns.PTN_NOQUEUE_CODE, lb.message(), 1 );
-            if ( s.isPresent() ) this.m_slog.addProp( lb.logTime(), id, "relay_status", s.get() );
+            //s = LogPatterns.matcher( LogPatterns.PTN_NOQUEUE_CODE, lb.message(), 1 );
+            //if ( s.isPresent() ) this.m_slog.addProp( lb.logTime(), id, "relay_status", s.get() );
             s = LogPatterns.matcher( LogPatterns.PTN_NOQUEUE_ERROR, lb.message(), 1 );
-            if ( s.isPresent() ) this.m_slog.addProp( lb.logTime(), id, "error", s.get() );
+            if ( s.isPresent() ) {
+                if ( s.get().contains( "450 4.7.25" ) ){
+                    this.m_slog.addProp( lb.logTime(), id, "error", "450 正/逆引き不整合" );
+                }else if ( s.get().contains( "504 5.5.2" ) ){
+                    this.m_slog.addProp( lb.logTime(), id, "error", "504 HELO異常" );
+                }else if ( s.get().contains( "554 5.7.1" ) ){
+                    this.m_slog.addProp( lb.logTime(), id, "error", "554 メアド偽装" );
+                }else{
+                    this.m_slog.addProp( lb.logTime(), id, "error", s.get() );
+                }
+            }
         }
         if ( lb.message().startsWith( "warning: non-SMTP command " ) ){
             // warning: non-SMTP command from scan-59a.shadowserver.org[65.49.1.108]: GET / HTTP/1.1
-            this.m_slog.addProp( lb.logTime(), id, "relay_status", "none-smtp" );
+            //this.m_slog.addProp( lb.logTime(), id, "relay_status", "none-smtp" );
+            this.m_slog.addProp( lb.logTime(), id, "error", "非SMTP" );
         }
 
         if ( lb.message().startsWith( "improper command pipelining " ) ){
             // improper command pipelining after CONNECT from unknown[195.3.222.78]:
-            this.m_slog.addProp( lb.logTime(), id, "relay_status", "improper-cmd" );
+            //this.m_slog.addProp( lb.logTime(), id, "relay_status", "improper-cmd" );
+            this.m_slog.addProp( lb.logTime(), id, "error", "SMTP違反" );
         }
 
         if ( lb.message().startsWith( "timeout after " ) ){
             // timeout after CONNECT from unknown[197.205.240.221]
-            this.m_slog.addProp( lb.logTime(), id, "relay_status", "timeout" );
+            //this.m_slog.addProp( lb.logTime(), id, "relay_status", "timeout" );
+            this.m_slog.addProp( lb.logTime(), id, "error", "timeout" );
         }
 
 
+        /*
         if ( lb.message().startsWith( "timeout after " )
             // timeout after CONNECT from unknown[197.205.240.221]
             || lb.message().startsWith( "lost connection after " )
@@ -166,7 +182,7 @@ public class SessionLogAnalyse {
             if (index == -1) return true;
             this.m_slog.addProp( lb.logTime(), id, "error", lb.message().substring( 0, index ) );
         }
-        
+         */
         // warning: run-time library vs. compile-time header version mismatch: OpenSSL 3.5.0 may not be compatible with OpenSSL 3.2.0
         // warning: TLS library problem: error:0A000412:SSL routines::ssl/tls alert bad certificate:ssl/record/rec_layer_s3.c:916:SSL alert number 42:
         /*
@@ -223,16 +239,18 @@ public class SessionLogAnalyse {
 
         // MilterReject
         if ( lb.message().contains( "milter-reject: " ) ){
-            Optional<MilterReject> mr;
-            mr = LogPatterns.extractMilterReject( lb.message() );
-            if ( mr.isPresent() ){
-                this.m_slog.addProp( lb.logTime(), id, "error", mr.get().status() + " " + mr.get().code() );
-            }
             if ( lb.message().contains( "5.7.1 Spam message rejected" ) ){
-                this.m_slog.addProp( lb.logTime(), id, "relay_status", "SPAM" );
-            }
-            if ( lb.message().contains( "4.7.1 Try again later" ) ){
-                this.m_slog.addProp( lb.logTime(), id, "relay_status", "soft reject" );
+                //this.m_slog.addProp( lb.logTime(), id, "relay_status", "SPAM" );
+                this.m_slog.addProp( lb.logTime(), id, "error", "SPAM" );
+            }else if ( lb.message().contains( "4.7.1 Try again later" ) ){
+                //this.m_slog.addProp( lb.logTime(), id, "relay_status", "soft reject" );
+                this.m_slog.addProp( lb.logTime(), id, "error", "SPAM Soft Reject" );
+            }else{
+                Optional<MilterReject> mr;
+                mr = LogPatterns.extractMilterReject( lb.message() );
+                if ( mr.isPresent() ){
+                    this.m_slog.addProp( lb.logTime(), id, "error", mr.get().status() + " " + mr.get().code() );
+                }
             }
         }
 
@@ -253,9 +271,9 @@ public class SessionLogAnalyse {
                 if ( relay_local == null ){
                     this.m_slog.addProp( lb.logTime(), id, "relay_status", "send null" );
                 }else if ( relay_local ){
-                    this.m_slog.addProp( lb.logTime(), id, "relay_status", "send local" );
+                    this.m_slog.addProp( lb.logTime(), id, "relay_status", "受信" );
                 }else{
-                    this.m_slog.addProp( lb.logTime(), id, "relay_status", "send remote" );
+                    this.m_slog.addProp( lb.logTime(), id, "relay_status", "送信" );
                 }
                 this.m_slog.addProp( lb.logTime(), id, "relay_detail", rs.get().detail() );
             }

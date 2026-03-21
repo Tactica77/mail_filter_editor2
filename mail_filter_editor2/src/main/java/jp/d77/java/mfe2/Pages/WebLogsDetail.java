@@ -7,6 +7,7 @@ import java.util.HashMap;
 import jp.d77.java.mfe2.BasicIO.ToolAny;
 import jp.d77.java.mfe2.Datas.SessionLogDatas;
 import jp.d77.java.mfe2.Datas.SessionLogDatas.LogBasicData;
+import jp.d77.java.mfe2.LogAnalyser.RspamdLog.RspamdLogData;
 import jp.d77.java.mfe2.Datas.SessionLogManager;
 import jp.d77.java.tools.BasicIO.ToolDate;
 import jp.d77.java.tools.HtmlIO.BSOpts;
@@ -60,12 +61,47 @@ public class WebLogsDetail {
             lines.put( key, ToolAny.joinDispI( sd.getPropI( id, key ) ).orElse("???") );
         }
 
+        String mid = null,qid = null;
         for ( String key: lines.keySet().stream().sorted().toArray(String[]::new) ){
             f.tableRowTop()
                 .tableTdHtml( key )
                 .tableTdHtml( lines.get(key) )
                 .tableRowBtm();
+            if ( key.equals( "msgid") ) mid = lines.get(key);
+            if ( key.equals( "postfix_queue") ) qid = lines.get(key);
         }
+
+        RspamdLogData rld = this.m_slog.getRspamData(targetDate, qid, mid ).orElse(null);
+        if ( rld != null ){
+            f.tableRowTop()
+                .tableTdHtml( "(RSPAMD)DateTime" )
+                .tableTdHtml( ToolDate.Format( rld.m_datetime, "uuuu-MM-dd hh:mm:ss").orElse("???") )
+                .tableRowBtm();
+            /*
+            f.tableRowTop()
+                .tableTdHtml( "(RSPAMD)SpamScoreString" )
+                .tableTdHtml( rld.m_spam_check_string )
+                .tableRowBtm();
+            */
+            f.tableRowTop()
+                .tableTdHtml( "(RSPAMD)SpamScore/Action" )
+                .tableTdHtml( rld.getScoreResult() )
+                .tableRowBtm();
+
+            f.tableRowTop()
+                .tableTdHtml( "(RSPAMD)SpamDetail" )
+                .tableTdHtml( String.join("<BR>", rld.getScoreDetail() ) )
+//                .tableTdHtml( ToolAny.joinDisp( rld.getScoreDetail() ).orElse("??") )
+                .tableRowBtm();
+
+            for ( String key: rld.m_props.keySet() ){
+                f.tableRowTop()
+                    .tableTdHtml( "(RSPAMD)" + key )
+                    .tableTdHtml( rld.m_props.get(key) )
+                    .tableRowBtm();
+            }
+        }
+
         f.tableBodyBtm();
         f.tableBtm();
         res += f.toString();

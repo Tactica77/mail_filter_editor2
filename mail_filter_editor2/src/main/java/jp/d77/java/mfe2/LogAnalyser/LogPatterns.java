@@ -35,7 +35,7 @@ public class LogPatterns {
     public static final Pattern PTN_POSFTIX_SMTPD_RESOLVEADDR = Pattern.compile("warning:\\s+hostname\\s+(\\S+)\\s+does not resolve to address\\s+(\\S+):\\s+");
 
     // NOQUEUEエラー取得
-    public static final Pattern PTN_NOQUEUE_CODE = Pattern.compile("^NOQUEUE:.*?:\\s+([45]\\d{2})\\s");
+    //public static final Pattern PTN_NOQUEUE_CODE  = Pattern.compile("^NOQUEUE:.*?:\\s+([45]\\d{2})\\s");
     public static final Pattern PTN_NOQUEUE_ERROR = Pattern.compile("^NOQUEUE:.*?:\\s+([45]\\d{2}[^;]*)");
 
     // relay取得

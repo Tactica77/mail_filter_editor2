@@ -9,17 +9,21 @@ import java.util.Map;
 import java.util.Optional;
 
 import jp.d77.java.mfe2.BasicIO.Mfe2Config;
+import jp.d77.java.mfe2.LogAnalyser.RspamdLog;
 import jp.d77.java.mfe2.LogAnalyser.SessionLogAnalyse;
 import jp.d77.java.mfe2.LogAnalyser.SessionLogNumbering;
+import jp.d77.java.mfe2.LogAnalyser.RspamdLog.RspamdLogData;
 import jp.d77.java.tools.BasicIO.ToolDate;
 
 public class SessionLogManager {
     private Mfe2Config m_cfg;
-    private Map< String, SessionLogDatas> m_sessionLog;
+    private Map<String, SessionLogDatas> m_sessionLog;
+    private Map<LocalDate, RspamdLog> m_rspamdLog;
     
     public SessionLogManager( Mfe2Config cfg ){
         this.m_cfg = cfg;
         this.m_sessionLog = new HashMap<>();
+        this.m_rspamdLog = new HashMap<>();
     }
 
     /**
@@ -32,6 +36,17 @@ public class SessionLogManager {
         String d = ToolDate.Format( targetDate, "uuuuMMdd" ).orElse(null);
         if ( d == null ) return Optional.empty();
         return Optional.ofNullable( d );
+    }
+
+    public Optional<RspamdLogData> getRspamData( LocalDate targetDate, String qid, String mid ){
+        if ( ! this.m_rspamdLog.containsKey( targetDate ) ){
+            // 読み込み
+            RspamdLog rspam = new RspamdLog( this.m_cfg );
+            rspam.Load(targetDate);
+            this.m_rspamdLog.put(targetDate, rspam);
+        }
+
+        return this.m_rspamdLog.get( targetDate ).getData(qid, mid);
     }
 
     /**
