@@ -158,14 +158,20 @@ public class CliUpdateFilter {
                         else if ( res.equals( "send null" ) ) this.getRank(ip).add( waight * (-4), sd.getStart(id), res  );
                         else if ( res.equals( "send local" ) ) this.getRank(ip).add( waight * (-4), sd.getStart(id), res  );
                         else if ( res.equals( "send remote" ) ) this.getRank(ip).add( waight * (-4), sd.getStart(id), res  );
+                        else if ( res.equals( "受信" ) ) this.getRank(ip).add( waight * (-4), sd.getStart(id), res  );
+                        else if ( res.equals( "送信" ) ) this.getRank(ip).add( waight * (-4), sd.getStart(id), res  );
 
                         else if ( res.equals( "SPAM" ) ) this.getRank(ip).add( waight, sd.getStart(id), res  );
                         else if ( res.equals( "soft reject" ) ) this.getRank(ip).add( waight / 2, sd.getStart(id), res  );
+                        else if ( res.equals( "SPAM Soft Reject" ) ) this.getRank(ip).add( waight / 2, sd.getStart(id), res  );
                         else if ( res.equals( "timeout" ) ) this.getRank(ip).add( waight / 4, sd.getStart(id), res  );
                         else if ( res.equals( "improper-cmd" ) ) this.getRank(ip).add(waight * 4, sd.getStart(id), res );    // 異常コマンド
+                        else if ( res.equals( "SMTP違反" ) ) this.getRank(ip).add(waight * 4, sd.getStart(id), res );    // 異常コマンド
                         else if ( res.equals( "none-smtp" ) ) this.getRank(ip).add( waight * 2, sd.getStart(id), res  );
+                        else if ( res.equals( "非SMTP" ) ) this.getRank(ip).add( waight * 2, sd.getStart(id), res  );
 
                         else if ( res.equals( "DNS not resolve" ) ) this.getRank(ip).add( waight / 4, sd.getStart(id), res  );
+                        else if ( res.equals( "(警告)正/逆引き不整合" ) ) this.getRank(ip).add( waight / 4, sd.getStart(id), res  );
                         else if ( res.startsWith( "SSL_accept error" ) ) this.getRank(ip).add( waight / 4, sd.getStart(id), res  );
                         else if ( res.startsWith( "lost connection after AUTH" ) ) this.getRank(ip).add( waight, sd.getStart(id), res  );
                         else if ( res.startsWith( "lost connection after" ) ) this.getRank(ip).add( waight / 4, sd.getStart(id), res  );

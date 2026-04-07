@@ -9,6 +9,7 @@ import jp.d77.java.mfe2.Datas.SessionLogDatas;
 import jp.d77.java.mfe2.Datas.SessionLogDatas.LogBasicData;
 import jp.d77.java.mfe2.LogAnalyser.RspamdLog.RspamdLogData;
 import jp.d77.java.mfe2.Datas.SessionLogManager;
+import jp.d77.java.tools.BasicIO.Debugger;
 import jp.d77.java.tools.BasicIO.ToolDate;
 import jp.d77.java.tools.HtmlIO.BSOpts;
 import jp.d77.java.tools.HtmlIO.BSSForm;
@@ -25,6 +26,7 @@ public class WebLogsDetail {
      * @return
      */
     public String display( int id, LocalDate targetDate ){
+        Debugger.TracePrint();
         String res = "";
 
         String displayYMD = ToolDate.Format( targetDate,"uuuu-MM-dd" ).orElse( "???" );

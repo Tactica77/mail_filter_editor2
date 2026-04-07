@@ -121,17 +121,19 @@ public class WebLogs extends AbstractMfe{
     public void displayBody() {
         super.displayBody();
 
-        // 日付選択フォームの表示
-        this.getHtml().addString( this.displayLogLoadForm() );
         if ( this.m_slog == null ) return;
 
         if ( this.getConfig().get( "submit_select_id" ).isPresent() ){
             // 詳細表示
             WebLogsDetail detail = new WebLogsDetail( this.m_slog);
             this.getHtml().addString( detail.display( this.m_select_id, this.m_targetDate ) );
+
         }else{
             WebLogsList list = new WebLogsList( this.getConfig(), this.m_slog);
             String res = "";
+
+            // 日付選択フォームの表示
+            this.getHtml().addString( this.displayLogLoadForm() );
 
             // -999 ログ
             res += list.display999();

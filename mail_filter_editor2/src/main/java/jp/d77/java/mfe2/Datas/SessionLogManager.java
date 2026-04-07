@@ -13,6 +13,7 @@ import jp.d77.java.mfe2.LogAnalyser.RspamdLog;
 import jp.d77.java.mfe2.LogAnalyser.SessionLogAnalyse;
 import jp.d77.java.mfe2.LogAnalyser.SessionLogNumbering;
 import jp.d77.java.mfe2.LogAnalyser.RspamdLog.RspamdLogData;
+import jp.d77.java.tools.BasicIO.Debugger;
 import jp.d77.java.tools.BasicIO.ToolDate;
 
 public class SessionLogManager {
@@ -21,6 +22,7 @@ public class SessionLogManager {
     private Map<LocalDate, RspamdLog> m_rspamdLog;
     
     public SessionLogManager( Mfe2Config cfg ){
+        Debugger.TracePrint();
         this.m_cfg = cfg;
         this.m_sessionLog = new HashMap<>();
         this.m_rspamdLog = new HashMap<>();
@@ -56,6 +58,7 @@ public class SessionLogManager {
     public void create( LocalDate targetDate ){
         Optional<String> d = this.date2str(targetDate);
         if ( d.isEmpty() ) return;
+        Debugger.InfoPrint( "targetDate=" + targetDate );
 
         SessionLogDatas sd = new SessionLogDatas( targetDate );
         SessionLogNumbering slogUpdate = new SessionLogNumbering( this.m_cfg, sd );
@@ -68,6 +71,7 @@ public class SessionLogManager {
      * @param targetDate
      */
     public void load( LocalDate targetDate, Integer targetId ){
+        Debugger.TracePrint();
         Optional<String> d = this.date2str(targetDate);
         if ( d.isEmpty() ) return;
 

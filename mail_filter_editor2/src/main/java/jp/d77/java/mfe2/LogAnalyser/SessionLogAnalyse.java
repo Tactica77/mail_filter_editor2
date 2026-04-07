@@ -31,7 +31,7 @@ public class SessionLogAnalyse {
             splResult spl = this.splitSessionLog( this.m_slog.getTargetDate(), line).orElse(null);
             if ( spl == null ) continue;
             if ( targetId != null ){
-                if ( targetId != spl.id ) continue;
+                if ( !targetId.equals( spl.id ) ) continue;
             }
             LogBasicData lb = this.m_slog.setLogBasic( spl.id(), spl.line() ).orElse(null);
             if ( lb == null ) continue;
